@@ -118,18 +118,20 @@ class ComicFolderTab(ttk.Frame):
             if os.path.isdir(path):
                 self.input_var.set(path)
                 if not self.output_var.get():
-                    self.output_var.set(path)
+                    # Default output to parent directory of input
+                    self.output_var.set(os.path.dirname(path))
             else:
                 self.input_var.set(os.path.dirname(path))
                 if not self.output_var.get():
-                    self.output_var.set(os.path.dirname(path))
+                    self.output_var.set(os.path.dirname(os.path.dirname(path)))
 
     def select_input(self):
         path = filedialog.askdirectory()
         if path:
             self.input_var.set(path)
             if not self.output_var.get():
-                self.output_var.set(path)
+                # Default output to parent directory of input
+                self.output_var.set(os.path.dirname(path))
             
     def select_output(self):
         path = filedialog.askdirectory()
