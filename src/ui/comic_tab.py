@@ -54,25 +54,28 @@ class ComicFolderTab(ttk.Frame):
         self.btn_browse_output.pack(side='right')
         
         # Format Selection
-        fmt_frame = ttk.Frame(self)
+        fmt_frame = ttk.Labelframe(self, text=i18n.get('format_label'), padding=10)
         fmt_frame.pack(fill='x', **padding)
         
-        self.lbl_format = ttk.Label(fmt_frame, text=i18n.get('format_label'))
-        self.lbl_format.pack(side='left')
+        self.formats = ["cbz", "pdf", "epub", "mobi", "zip", "rar", "7z"]
+        self.format_vars = {}
         
-        formats = [
-            ("cbz", i18n.get('fmt_cbz')),
-            ("pdf", i18n.get('fmt_pdf')),
-            ("epub", i18n.get('fmt_epub')),
-            ("mobi", i18n.get('fmt_mobi')),
-            ("zip", i18n.get('fmt_zip')),
-            ("7z", i18n.get('fmt_7z')),
-        ]
-        
-        # Improved Combobox style
-        self.format_combo = ttk.Combobox(fmt_frame, textvariable=self.format_var, state="readonly", width=20, bootstyle="primary")
-        self.format_combo['values'] = [f[0] for f in formats]
-        self.format_combo.pack(side='left', padx=10)
+        # Grid layout for checkboxes
+        for i, fmt in enumerate(self.formats):
+            var = tk.BooleanVar(value=(fmt == "cbz"))
+            self.format_vars[fmt] = var
+            chk = ttk.Checkbutton(fmt_frame, text=fmt.upper(), variable=var)
+            chk.grid(row=i // 4, column=i % 4, sticky='w', padx=5, pady=2)
+            
+        # Recursive / Process Archives option
+        self.process_archives_var = tk.BooleanVar(value=False)
+        self.chk_process_archives = ttk.Checkbutton(
+            self, 
+            text="Recursive / Process Archives (Also convert .zip/.rar...)", 
+            variable=self.process_archives_var,
+            bootstyle="info-round-toggle"
+        )
+        self.chk_process_archives.pack(anchor='w', padx=20, pady=5)
         
         # Drag Drop Hint
         self.lbl_hint = ttk.Label(self, text=i18n.get('drag_drop_hint'), bootstyle="info", font=("Helvetica", 9, "italic"))
@@ -109,7 +112,7 @@ class ComicFolderTab(ttk.Frame):
         self.start_btn.config(text=i18n.get('start'))
         self.status_label.config(text=i18n.get('ready'))
         self.log_label_frame.config(text=i18n.get('log'))
-        self.lbl_format.config(text=i18n.get('format_label'))
+        self.fmt_frame.config(text=i18n.get('format_label'))
 
     def on_drop(self, event):
         files = self.tk.splitlist(event.data)
@@ -141,7 +144,9 @@ class ComicFolderTab(ttk.Frame):
     def start_processing(self):
         input_dir = self.input_var.get()
         output_dir = self.output_var.get()
-        fmt = self.format_var.get()
+        
+        selected_formats = [fmt for fmt in self.formats if self.format_vars[fmt].get()]
+        process_archives = self.process_archives_var.get()
         
         if not input_dir:
             self.log(i18n.get('select_input'))
@@ -151,23 +156,28 @@ class ComicFolderTab(ttk.Frame):
             self.log(i18n.get('input_not_exist', input_dir))
             return
             
+        if not selected_formats:
+            self.log("Please select at least one format.")
+            return
+
         # Disable buttons
         self.start_btn.config(state='disabled')
         self.progress_bar['value'] = 0
         self.log_area.delete(1.0, tk.END)
-        self.log(f"{i18n.get('processing')}\nInput: {input_dir}\nOutput: {output_dir}\nFormat: {fmt}\n")
+        self.log(f"{i18n.get('processing')}\nInput: {input_dir}\nOutput: {output_dir}\nFormats: {', '.join(selected_formats)}\nProcess Archives: {process_archives}\n")
         
         # Run in thread
-        threading.Thread(target=self.run_conversion, args=(input_dir, output_dir, fmt), daemon=True).start()
+        threading.Thread(target=self.run_conversion, args=(input_dir, output_dir, selected_formats, process_archives), daemon=True).start()
         
-    def run_conversion(self, input_dir, output_dir, fmt):
+    def run_conversion(self, input_dir, output_dir, formats, process_archives):
         try:
             target_output = output_dir if output_dir.strip() else None
             
             converter.process_directory(
                 input_dir, 
                 target_output, 
-                fmt=fmt,
+                formats=formats,
+                process_archives=process_archives,
                 progress_callback=self.update_progress,
                 log_callback=self.log
             )

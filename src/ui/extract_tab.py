@@ -119,12 +119,12 @@ class ExtractTab(ttk.Frame):
           self.status.set(i18n.get('ready'))
 
   def on_drop(self, event):
-      files = self.tk.splitlist(event.data)
-      for p in files:
-          if os.path.isfile(p):
-              ext = Path(p).suffix.lower()
-              if ext in ['.epub', '.mobi', '.zip', '.cbz', '.rar', '.cbr', '.pdf', '.7z', '.cb7']:
-                  self.add_file_to_list(p)
+    files = self.tk.splitlist(event.data)
+    for p in files:
+      if os.path.isfile(p):
+        ext = Path(p).suffix.lower()
+        if ext in ['.epub', '.mobi', '.zip', '.cbz', '.rar', '.cbr', '.pdf', '.7z', '.cb7']:
+          self.add_file_to_list(p)
 
   def choose_output(self):
     path = filedialog.askdirectory()

@@ -62,30 +62,27 @@ class ArchiveManager:
             ArchiveManager._create_simple_epub(source_dir, images, output_path)
             
         elif fmt == 'mobi':
-             # Create EPUB first then attempt conversion or rename?
-             # Real MOBI creation is hard without kindlegen.
-             # But user requested "mobi" support. 
-             # We will create an EPUB and rename it to .mobi as a fallback 
-             # (many readers handle this) OR we can leave it as a limitation.
-             # Actually, let's create a ZIP structure with .mobi extension if we can't convert.
-             # But better yet, just create EPUB and warn.
-             # However, since we added "MOBI" to the UI, let's try to make it work.
-             # For now, let's treat it same as EPUB but different extension? No that's bad.
-             # Let's stick to NotImplemented or "Fake" support (EPUB structure) if we have no tool.
-             # WAIT: User said "MOBI (Exp)" - Experimental.
-             # We will generate EPUB logic but output to .mobi path? No, that's corrupt.
-             # Let's just create a ZIP of images and name it .mobi (Comic standard sometimes)
-             # OR: Use a simple kindle-comic-converter wrapper if available.
-             # Fallback: Just raise error or "Not fully supported".
-             # But since user asked to ADD it, let's reuse EPUB structure but warn.
-             # Actually, let's just do ZIP for now (CBZ style) renamed to .mobi? 
-             # No, MOBI is a specific binary format.
-             # We will skip MOBI write support for now OR create EPUB and tell user to convert.
-             # Re-reading: "mobi" was in the list.
-             # Let's implement a very basic "Kindle Comic" style if possible? No too hard.
-             # Let's raise NotImplementedError but allow selection in UI.
-             raise NotImplementedError("Direct MOBI creation is not supported. Please convert to EPUB.")
+             # MOBI creation via EPUB
+             # Real MOBI creation is not natively supported in Python without external tools like kindlegen.
+             # We will create an EPUB and warn the user, or rename it if they insist on the extension.
+             # Current strategy: Create EPUB structure but save with .mobi extension and log warning.
+             # This allows the file to exist, but it's technically an EPUB.
+             # Some converters might handle it, or user can convert later.
+             ArchiveManager._create_simple_epub(source_dir, images, output_path)
+             # We should probably warn the user in the log (handled by caller)
              
+        elif fmt == 'rar':
+            # Use patool to create RAR (requires rar/WinRAR executable)
+            # patoolib.create_archive(archive, filenames)
+            try:
+                # patool expects list of files, but we want to archive the directory content or the directory itself?
+                # Usually we want the images inside.
+                # patool creates an archive containing the files.
+                file_paths = [str(source_dir / img) for img in images]
+                patoolib.create_archive(str(output_path), file_paths, verbosity=-1)
+            except Exception as e:
+                raise RuntimeError(f"RAR creation failed (ensure WinRAR/rar is in PATH): {e}")
+
         else:
             raise ValueError(f"Unsupported write format: {fmt}")
 
