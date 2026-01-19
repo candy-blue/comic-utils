@@ -99,6 +99,7 @@ class EbookTab(ttk.Frame):
             ("epub", i18n.get('fmt_epub')),
             ("mobi", i18n.get('fmt_mobi')),
             ("zip", i18n.get('fmt_zip')),
+            ("rar", i18n.get('fmt_rar')),
             ("7z", i18n.get('fmt_7z')),
     ]
     self.format_combo = ttk.Combobox(right, textvariable=self.format_var, state="readonly", width=20, bootstyle="primary")
@@ -165,7 +166,7 @@ class EbookTab(ttk.Frame):
       messagebox.showwarning(i18n.get('error'), "Cannot open output directory")
 
   def add_files(self):
-    paths = filedialog.askopenfilenames(filetypes=[("Archives", "*.epub *.mobi *.zip *.cbz *.rar *.cbr *.pdf"), ("All", "*.*")])
+    paths = filedialog.askopenfilenames(filetypes=[("Archives", "*.epub *.mobi *.zip *.cbz *.rar *.cbr *.pdf *.7z *.cb7"), ("All", "*.*")])
     for p in paths:
       if not p: continue
       self.add_file_to_list(p)

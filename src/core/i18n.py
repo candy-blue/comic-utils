@@ -113,7 +113,7 @@ TRANSLATIONS = {
         'fmt_epub': 'EPUB',
         'fmt_mobi': 'MOBI (实验性)',
         'fmt_zip': 'ZIP',
-        'fmt_rar': 'RAR (仅读取)',
+        'fmt_rar': 'RAR',
         'fmt_7z': '7Z',
     }
 }
