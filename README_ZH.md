@@ -22,7 +22,7 @@
 
 ## 🖼️ 界面预览
 
-*(此处可放置截图)*
+<img src="https://github.com/candy-blue/comic-utils/tree/main/image/image1.png" width="45%" alt="Interface 1" /> <img src="https://github.com/candy-blue/comic-utils/tree/main/image/image2.png" width="45%" alt="Interface 2" />
 
 ---
 
