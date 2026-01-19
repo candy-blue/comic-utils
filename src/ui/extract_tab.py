@@ -5,18 +5,15 @@ from tkinter import filedialog, messagebox
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import os
-import subprocess
-import sys
-from src.modules.ebook_to_cbz.converter import ConvertError, convert_ebook
+from src.core.archive_manager import ArchiveManager
 from src.core.i18n import i18n
 from tkinterdnd2 import DND_FILES
 
-class EbookTab(ttk.Frame):
+class ExtractTab(ttk.Frame):
   def __init__(self, parent):
     super().__init__(parent)
     
     self.output_dir = tk.StringVar(value=str(Path.cwd()))
-    self.format_var = tk.StringVar(value="cbz")
     self.status = tk.StringVar(value=i18n.get('ready'))
     self.is_working = False
     self._job_total = 0
@@ -27,11 +24,9 @@ class EbookTab(ttk.Frame):
 
     self._build_ui()
     
-    # Bind i18n
     i18n.add_listener(self.update_texts)
     self.update_texts()
 
-    # DnD
     self.drop_target_register(DND_FILES)
     self.dnd_bind('<<Drop>>', self.on_drop)
 
@@ -39,7 +34,7 @@ class EbookTab(ttk.Frame):
     # Top Bar
     top = ttk.Labelframe(self, text=i18n.get('output_dir'), padding=10)
     top.grid(row=0, column=0, sticky="ew", padx=10, pady=5)
-    self.top_frame = top # store reference
+    self.top_frame = top
     top.columnconfigure(1, weight=1)
 
     self.entry_output = ttk.Entry(top, textvariable=self.output_dir)
@@ -89,27 +84,12 @@ class EbookTab(ttk.Frame):
     self.btn_clear = ttk.Button(right, text=i18n.get('clear_list'), command=self.clear_list, bootstyle="danger")
     self.btn_clear.grid(row=2, column=0, sticky="ew", pady=(8, 0))
     
-    # Format Selection
-    self.lbl_format = ttk.Label(right, text=i18n.get('format_label'))
-    self.lbl_format.grid(row=3, column=0, sticky="w", pady=(15, 0))
-    
-    formats = [
-            ("cbz", i18n.get('fmt_cbz')),
-            ("pdf", i18n.get('fmt_pdf')),
-            ("epub", i18n.get('fmt_epub')),
-            ("zip", i18n.get('fmt_zip')),
-            ("7z", i18n.get('fmt_7z')),
-    ]
-    self.format_combo = ttk.Combobox(right, textvariable=self.format_var, state="readonly")
-    self.format_combo['values'] = [f[0] for f in formats]
-    self.format_combo.grid(row=4, column=0, sticky="ew", pady=(5, 0))
-
     # Hint
     self.lbl_hint = ttk.Label(right, text=i18n.get('drag_drop_hint'), wraplength=100, bootstyle="secondary", justify="center")
-    self.lbl_hint.grid(row=5, column=0, sticky="ew", pady=(20, 0))
+    self.lbl_hint.grid(row=3, column=0, sticky="ew", pady=(20, 0))
 
-    self.btn_start = ttk.Button(right, text=i18n.get('start'), command=self.start_convert, bootstyle="success")
-    self.btn_start.grid(row=6, column=0, sticky="ew", pady=(20, 0))
+    self.btn_start = ttk.Button(right, text=i18n.get('start'), command=self.start_extract, bootstyle="success")
+    self.btn_start.grid(row=4, column=0, sticky="ew", pady=(20, 0))
 
     # Bottom Area
     bottom = ttk.Frame(self, padding=10)
@@ -134,7 +114,6 @@ class EbookTab(ttk.Frame):
       self.btn_clear.config(text=i18n.get('clear_list'))
       self.btn_start.config(text=i18n.get('start'))
       self.lbl_hint.config(text=i18n.get('drag_drop_hint'))
-      self.lbl_format.config(text=i18n.get('format_label'))
       
       if not self.is_working and self._job_total == 0:
           self.status.set(i18n.get('ready'))
@@ -144,7 +123,7 @@ class EbookTab(ttk.Frame):
       for p in files:
           if os.path.isfile(p):
               ext = Path(p).suffix.lower()
-              if ext in ['.epub', '.mobi', '.zip', '.cbz', '.rar', '.cbr', '.pdf']:
+              if ext in ['.epub', '.mobi', '.zip', '.cbz', '.rar', '.cbr', '.pdf', '.7z', '.cb7']:
                   self.add_file_to_list(p)
 
   def choose_output(self):
@@ -164,7 +143,7 @@ class EbookTab(ttk.Frame):
       messagebox.showwarning(i18n.get('error'), "Cannot open output directory")
 
   def add_files(self):
-    paths = filedialog.askopenfilenames(filetypes=[("Archives", "*.epub *.mobi *.zip *.cbz *.rar *.cbr *.pdf"), ("All", "*.*")])
+    paths = filedialog.askopenfilenames(filetypes=[("Archives", "*.epub *.mobi *.zip *.cbz *.rar *.cbr *.pdf *.7z *.cb7"), ("All", "*.*")])
     for p in paths:
       if not p: continue
       self.add_file_to_list(p)
@@ -187,7 +166,7 @@ class EbookTab(ttk.Frame):
     self.progress["value"] = 0
     self.progress["maximum"] = 0
 
-  def start_convert(self):
+  def start_extract(self):
     if self.is_working:
       return
     items = list(self.tree.get_children(""))
@@ -197,7 +176,6 @@ class EbookTab(ttk.Frame):
 
     out_dir = Path(self.output_dir.get()).expanduser().resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    fmt = self.format_var.get()
 
     self.is_working = True
     self._set_buttons_state(disabled=True)
@@ -207,24 +185,32 @@ class EbookTab(ttk.Frame):
     self.progress["value"] = 0
     self._set_progress(0, self._job_total, 0, 0)
 
-    t = threading.Thread(target=self._convert_worker, args=(items, out_dir, fmt), daemon=True)
+    t = threading.Thread(target=self._extract_worker, args=(items, out_dir), daemon=True)
     t.start()
 
-  def _convert_worker(self, items, out_dir: Path, fmt: str):
+  def _extract_worker(self, items, out_dir: Path):
     ok = 0
     fail = 0
     last_error = ""
     for item in items:
       p = self.tree.item(item, "values")[0]
       try:
-        self._set_item_status(item, i18n.get('status_converting'))
-        convert_ebook(Path(p), output_dir=out_dir, fmt=fmt)
-        ok += 1
-        self._set_item_status(item, i18n.get('status_success'))
-      except ConvertError as e:
-        fail += 1
-        last_error = str(e)
-        self._set_item_status(item, i18n.get('status_failed'))
+        self._set_item_status(item, i18n.get('status_extracting'))
+        
+        # Create a subfolder for each archive
+        archive_name = Path(p).stem
+        target_dir = out_dir / archive_name
+        
+        count = ArchiveManager.extract_archive(Path(p), target_dir)
+        
+        if count > 0:
+            ok += 1
+            self._set_item_status(item, i18n.get('status_success'))
+        else:
+            fail += 1
+            last_error = "No images extracted"
+            self._set_item_status(item, i18n.get('status_failed'))
+            
       except Exception as e:
         fail += 1
         last_error = str(e)

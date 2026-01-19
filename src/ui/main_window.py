@@ -4,6 +4,7 @@ from ttkbootstrap.constants import *
 from tkinterdnd2 import TkinterDnD
 from src.ui.comic_tab import ComicFolderTab
 from src.ui.ebook_tab import EbookTab
+from src.ui.extract_tab import ExtractTab
 from src.core.i18n import i18n
 from tkinter import messagebox
 
@@ -30,9 +31,11 @@ class MainWindow(TkinterDnD.Tk):
         # Add Tabs
         self.comic_tab = ComicFolderTab(self.notebook)
         self.ebook_tab = EbookTab(self.notebook)
+        self.extract_tab = ExtractTab(self.notebook)
         
-        self.notebook.add(self.comic_tab, text=i18n.get('tab_comic'))
-        self.notebook.add(self.ebook_tab, text=i18n.get('tab_ebook'))
+        self.notebook.add(self.comic_tab, text=i18n.get('tab_folder_to_fmt'))
+        self.notebook.add(self.ebook_tab, text=i18n.get('tab_fmt_to_fmt'))
+        self.notebook.add(self.extract_tab, text=i18n.get('tab_extract'))
         
         # Listen for language changes to update title/tabs
         i18n.add_listener(self.update_texts)
@@ -45,9 +48,7 @@ class MainWindow(TkinterDnD.Tk):
         lang_menu.add_command(label="English", command=lambda: i18n.set_lang('en'))
         lang_menu.add_command(label="中文", command=lambda: i18n.set_lang('zh'))
         menubar.add_cascade(label=i18n.get('menu_language'), menu=lang_menu)
-        self.lang_menu_ref = menubar # Reference to update label later? 
-        # Actually tk menu labels are hard to update dynamically without recreating, 
-        # but we can try referencing the cascade index.
+        self.lang_menu_ref = menubar
         
         # Help Menu
         help_menu = tk.Menu(menubar, tearoff=0)
@@ -59,8 +60,9 @@ class MainWindow(TkinterDnD.Tk):
 
     def update_texts(self):
         self.title(i18n.get('app_title'))
-        self.notebook.tab(0, text=i18n.get('tab_comic'))
-        self.notebook.tab(1, text=i18n.get('tab_ebook'))
+        self.notebook.tab(0, text=i18n.get('tab_folder_to_fmt'))
+        self.notebook.tab(1, text=i18n.get('tab_fmt_to_fmt'))
+        self.notebook.tab(2, text=i18n.get('tab_extract'))
         
         # Recreate menu to update labels
         self.create_menu()
