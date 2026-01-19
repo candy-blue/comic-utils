@@ -1,3 +1,5 @@
 tqdm
 mobi
 pyinstaller
+ttkbootstrap
+tkinterdnd2
