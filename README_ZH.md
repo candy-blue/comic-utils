@@ -12,17 +12,17 @@
 ## ✨ 功能
 
 - ⚡ **纯离线实现**，安全可靠，所有文件都在本地处理
-- 📂 **文件夹转格式**：支持将包含图片的文件夹批量转换为 `CBZ`, `PDF`, `EPUB`, `ZIP`, `7Z`
-- 📚 **格式转换**：支持电子书/漫画格式互转 (`.epub`, `.mobi`, `.cbz` 等)
-- 📤 **提取到文件夹**：一键将各种格式 (`.cbz`, `.pdf` 等) 里的图片提取到文件夹
-- 🧭 **智能排序**：图片按文件名自然排序（自动识别 1、2、10 顺序）
-- 🖥️ **现代化界面**：中英双语支持，电脑拖拽文件即可使用
+- 📂 **文件夹转格式**：将包含图片的文件夹批量转换为 **CBZ, PDF, EPUB, ZIP, 7Z**。非常适合整理散乱的图集。
+- 🔄 **格式转换**：支持各种漫画/电子书格式互转（例如 **EPUB 转 CBZ**，**MOBI 转 PDF**）。支持输入 `.epub`, `.mobi`, `.cbz`, `.zip`, `.rar`, `.pdf` 等格式。
+- 📤 **提取图片**：一键将漫画包（CBZ, EPUB, PDF 等）中的所有图片提取到单独的文件夹中。
+- 🧭 **智能排序**：文件处理遵循自然数字顺序（1, 2, 10...），避免乱序，确保阅读顺序正确。
+- 🖥️ **现代化界面**：中英双语支持，全界面支持 **拖拽操作**，简单直观。
 
 ---
 
 ## 🖼️ 界面预览
 
-<img src="https://github.com/candy-blue/comic-utils/blob/main/image/image1.png" width="45%" alt="Interface 1" /> <img src="https://github.com/candy-blue/comic-utils/blob/main/image/image2.png" width="45%" alt="Interface 2" />
+<img src="https://github.com/candy-blue/comic-utils/tree/main/image/image1.png" width="45%" alt="Interface 1" /> <img src="https://github.com/candy-blue/comic-utils/tree/main/image/image2.png" width="45%" alt="Interface 2" />
 
 ---
 
