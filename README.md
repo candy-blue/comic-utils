@@ -1,17 +1,10 @@
 # 📦 Comic Utilities
 
 **[English](README.md) | [中文](README_ZH.md)**
-
-A unified toolset for comic book enthusiasts to easily manage and convert various formats!
-
-A pure offline **Comic Management** tool · No server uploads, all operations are local.
-🛠️ Originally a personal practice project to prevent losing it later, so backed up on GitHub 😂
-
 ---
 
 ## ✨ Features
 
-- ⚡ **Offline & Secure**: All processing happens locally on your machine.
 - 📂 **Folder to Format**: Batch convert folders containing images into **CBZ, PDF, EPUB, ZIP, or 7Z**. Perfect for organizing loose image collections.
 - � **Format Converter**: Convert between various comic/ebook formats (e.g., **EPUB to CBZ**, **MOBI to PDF**). Supports converting `.epub`, `.mobi`, `.cbz`, `.zip`, `.rar`, `.pdf` to any target format.
 - 📤 **Extract Images**: Quickly extract all images from any comic archive (`.cbz`, `.epub`, `.pdf`, etc.) into a folder.
