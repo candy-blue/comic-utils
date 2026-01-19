@@ -32,17 +32,19 @@ jobs:
     - name: Build EXE
       run: |
         pyinstaller comic-utils.spec
+        dir dist
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
         name: ComicUtils-Windows
-        path: dist/ComicUtils.exe
+        path: dist/*.exe
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/ComicUtils.exe
+        files: dist/*.exe
+        fail_on_unmatched_files: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
