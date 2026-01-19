@@ -64,11 +64,13 @@ class ComicFolderTab(ttk.Frame):
             ("cbz", i18n.get('fmt_cbz')),
             ("pdf", i18n.get('fmt_pdf')),
             ("epub", i18n.get('fmt_epub')),
+            ("mobi", i18n.get('fmt_mobi')),
             ("zip", i18n.get('fmt_zip')),
             ("7z", i18n.get('fmt_7z')),
         ]
         
-        self.format_combo = ttk.Combobox(fmt_frame, textvariable=self.format_var, state="readonly", width=15)
+        # Improved Combobox style
+        self.format_combo = ttk.Combobox(fmt_frame, textvariable=self.format_var, state="readonly", width=20, bootstyle="primary")
         self.format_combo['values'] = [f[0] for f in formats]
         self.format_combo.pack(side='left', padx=10)
         
