@@ -1,38 +1,9 @@
 import os
-import zipfile
 from pathlib import Path
-from src.core.utils import is_image_file, natural_sort_key
+from src.core.utils import is_image_file
+from src.core.archive_manager import ArchiveManager
 
-def create_cbz(source_dir, output_dir=None):
-    """Compress the directory into a .cbz file."""
-    source_path = Path(source_dir)
-    cbz_name = source_path.name + '.cbz'
-    
-    if output_dir:
-        output_path = Path(output_dir) / cbz_name
-    else:
-        # Create in the parent directory of the source folder
-        output_path = source_path.parent / cbz_name
-        
-    # Get all image files
-    images = [f for f in os.listdir(source_path) if is_image_file(f)]
-    # Use natural sort
-    images.sort(key=natural_sort_key)
-    
-    if not images:
-        return False, "No images found"
-
-    try:
-        with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-            for img in images:
-                file_path = source_path / img
-                # Archive name is just the filename to keep it flat inside the cbz
-                zf.write(file_path, arcname=img)
-        return True, f"Created {output_path}"
-    except Exception as e:
-        return False, str(e)
-
-def process_directory(root_dir, output_dir=None, progress_callback=None, log_callback=None):
+def process_directory(root_dir, output_dir=None, fmt='cbz', progress_callback=None, log_callback=None):
     """Recursively find and process folders containing images."""
     if log_callback is None:
         log_callback = print
@@ -60,14 +31,21 @@ def process_directory(root_dir, output_dir=None, progress_callback=None, log_cal
     total = len(comic_folders)
     for i, folder in enumerate(comic_folders):
         if progress_callback:
-            progress_callback(i, total, f"Converting {folder.name}")
+            progress_callback(i, total, f"Processing {folder.name}")
             
-        success, message = create_cbz(folder, output_dir)
-        
-        if not success:
-             log_callback(f"Error processing {folder}: {message}")
-        else:
-             log_callback(f"Success: {folder.name} -> {message}")
+        try:
+            # Determine output path
+            archive_name = folder.name + '.' + fmt
+            if output_dir:
+                output_path = Path(output_dir) / archive_name
+            else:
+                output_path = folder.parent / archive_name
+                
+            ArchiveManager.create_archive(folder, output_path, fmt)
+            log_callback(f"Success: {folder.name} -> {output_path}")
+            
+        except Exception as e:
+            log_callback(f"Error processing {folder}: {e}")
         
     if progress_callback:
         progress_callback(total, total, "Done")

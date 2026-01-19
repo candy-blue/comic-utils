@@ -15,6 +15,7 @@ class ComicFolderTab(ttk.Frame):
         # Variables
         self.input_var = tk.StringVar()
         self.output_var = tk.StringVar()
+        self.format_var = tk.StringVar(value="cbz")
         
         # Layout
         self.create_widgets()
@@ -33,7 +34,7 @@ class ComicFolderTab(ttk.Frame):
         # Input Directory
         input_frame = ttk.Labelframe(self, text=i18n.get('input_dir'), padding=10)
         input_frame.pack(fill='x', **padding)
-        self.input_label_frame = input_frame # store reference to update text
+        self.input_label_frame = input_frame
 
         self.entry_input = ttk.Entry(input_frame, textvariable=self.input_var)
         self.entry_input.pack(side='left', fill='x', expand=True, padx=(0, 5))
@@ -44,13 +45,32 @@ class ComicFolderTab(ttk.Frame):
         # Output Directory
         output_frame = ttk.Labelframe(self, text=i18n.get('output_dir'), padding=10)
         output_frame.pack(fill='x', **padding)
-        self.output_label_frame = output_frame # store reference
+        self.output_label_frame = output_frame
 
         self.entry_output = ttk.Entry(output_frame, textvariable=self.output_var)
         self.entry_output.pack(side='left', fill='x', expand=True, padx=(0, 5))
         
         self.btn_browse_output = ttk.Button(output_frame, text=i18n.get('browse'), command=self.select_output, bootstyle="secondary")
         self.btn_browse_output.pack(side='right')
+        
+        # Format Selection
+        fmt_frame = ttk.Frame(self)
+        fmt_frame.pack(fill='x', **padding)
+        
+        self.lbl_format = ttk.Label(fmt_frame, text=i18n.get('format_label'))
+        self.lbl_format.pack(side='left')
+        
+        formats = [
+            ("cbz", i18n.get('fmt_cbz')),
+            ("pdf", i18n.get('fmt_pdf')),
+            ("epub", i18n.get('fmt_epub')),
+            ("zip", i18n.get('fmt_zip')),
+            ("7z", i18n.get('fmt_7z')),
+        ]
+        
+        self.format_combo = ttk.Combobox(fmt_frame, textvariable=self.format_var, state="readonly", width=15)
+        self.format_combo['values'] = [f[0] for f in formats]
+        self.format_combo.pack(side='left', padx=10)
         
         # Drag Drop Hint
         self.lbl_hint = ttk.Label(self, text=i18n.get('drag_drop_hint'), bootstyle="info", font=("Helvetica", 9, "italic"))
@@ -73,7 +93,7 @@ class ComicFolderTab(ttk.Frame):
         # Log Area
         log_frame = ttk.Labelframe(self, text=i18n.get('log'), padding=10)
         log_frame.pack(fill='both', expand=True, **padding)
-        self.log_label_frame = log_frame # store reference
+        self.log_label_frame = log_frame
 
         self.log_area = scrolledtext.ScrolledText(log_frame, height=10)
         self.log_area.pack(fill='both', expand=True)
@@ -87,18 +107,17 @@ class ComicFolderTab(ttk.Frame):
         self.start_btn.config(text=i18n.get('start'))
         self.status_label.config(text=i18n.get('ready'))
         self.log_label_frame.config(text=i18n.get('log'))
+        self.lbl_format.config(text=i18n.get('format_label'))
 
     def on_drop(self, event):
         files = self.tk.splitlist(event.data)
         if files:
-            # Take the first one if it's a directory
             path = files[0]
             if os.path.isdir(path):
                 self.input_var.set(path)
                 if not self.output_var.get():
                     self.output_var.set(path)
             else:
-                # If file, maybe take parent?
                 self.input_var.set(os.path.dirname(path))
                 if not self.output_var.get():
                     self.output_var.set(os.path.dirname(path))
@@ -118,6 +137,7 @@ class ComicFolderTab(ttk.Frame):
     def start_processing(self):
         input_dir = self.input_var.get()
         output_dir = self.output_var.get()
+        fmt = self.format_var.get()
         
         if not input_dir:
             self.log(i18n.get('select_input'))
@@ -131,18 +151,19 @@ class ComicFolderTab(ttk.Frame):
         self.start_btn.config(state='disabled')
         self.progress_bar['value'] = 0
         self.log_area.delete(1.0, tk.END)
-        self.log(f"{i18n.get('processing')}\nInput: {input_dir}\nOutput: {output_dir}\n")
+        self.log(f"{i18n.get('processing')}\nInput: {input_dir}\nOutput: {output_dir}\nFormat: {fmt}\n")
         
         # Run in thread
-        threading.Thread(target=self.run_conversion, args=(input_dir, output_dir), daemon=True).start()
+        threading.Thread(target=self.run_conversion, args=(input_dir, output_dir, fmt), daemon=True).start()
         
-    def run_conversion(self, input_dir, output_dir):
+    def run_conversion(self, input_dir, output_dir, fmt):
         try:
             target_output = output_dir if output_dir.strip() else None
             
             converter.process_directory(
                 input_dir, 
                 target_output, 
+                fmt=fmt,
                 progress_callback=self.update_progress,
                 log_callback=self.log
             )
