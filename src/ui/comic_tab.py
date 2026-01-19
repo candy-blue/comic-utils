@@ -1,13 +1,16 @@
 import tkinter as tk
-from tkinter import filedialog, ttk, scrolledtext
+from tkinter import filedialog, scrolledtext
+import ttkbootstrap as ttk
+from ttkbootstrap.constants import *
 import threading
 import os
 from src.modules.comic_folder import converter
+from src.core.i18n import i18n
+from tkinterdnd2 import DND_FILES
 
 class ComicFolderTab(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
-        # self.pack(fill='both', expand=True) # Let the notebook handle packing
         
         # Variables
         self.input_var = tk.StringVar()
@@ -16,49 +19,94 @@ class ComicFolderTab(ttk.Frame):
         # Layout
         self.create_widgets()
         
+        # Bind i18n
+        i18n.add_listener(self.update_texts)
+        self.update_texts()
+
+        # DnD
+        self.drop_target_register(DND_FILES)
+        self.dnd_bind('<<Drop>>', self.on_drop)
+        
     def create_widgets(self):
         padding = {'padx': 10, 'pady': 5}
         
         # Input Directory
-        input_frame = tk.Frame(self)
+        input_frame = ttk.Labelframe(self, text=i18n.get('input_dir'), padding=10)
         input_frame.pack(fill='x', **padding)
-        tk.Label(input_frame, text="Input Directory:").pack(anchor='w')
-        tk.Entry(input_frame, textvariable=self.input_var).pack(side='left', fill='x', expand=True)
-        tk.Button(input_frame, text="Browse...", command=self.select_input).pack(side='right', padx=(5, 0))
+        self.input_label_frame = input_frame # store reference to update text
+
+        self.entry_input = ttk.Entry(input_frame, textvariable=self.input_var)
+        self.entry_input.pack(side='left', fill='x', expand=True, padx=(0, 5))
+        
+        self.btn_browse_input = ttk.Button(input_frame, text=i18n.get('browse'), command=self.select_input, bootstyle="secondary")
+        self.btn_browse_input.pack(side='right')
         
         # Output Directory
-        output_frame = tk.Frame(self)
+        output_frame = ttk.Labelframe(self, text=i18n.get('output_dir'), padding=10)
         output_frame.pack(fill='x', **padding)
-        tk.Label(output_frame, text="Output Directory:").pack(anchor='w')
-        tk.Entry(output_frame, textvariable=self.output_var).pack(side='left', fill='x', expand=True)
-        tk.Button(output_frame, text="Browse...", command=self.select_output).pack(side='right', padx=(5, 0))
+        self.output_label_frame = output_frame # store reference
+
+        self.entry_output = ttk.Entry(output_frame, textvariable=self.output_var)
+        self.entry_output.pack(side='left', fill='x', expand=True, padx=(0, 5))
         
+        self.btn_browse_output = ttk.Button(output_frame, text=i18n.get('browse'), command=self.select_output, bootstyle="secondary")
+        self.btn_browse_output.pack(side='right')
+        
+        # Drag Drop Hint
+        self.lbl_hint = ttk.Label(self, text=i18n.get('drag_drop_hint'), bootstyle="info", font=("Helvetica", 9, "italic"))
+        self.lbl_hint.pack(pady=5)
+
         # Start Button
-        btn_frame = tk.Frame(self)
+        btn_frame = ttk.Frame(self)
         btn_frame.pack(fill='x', **padding)
-        self.start_btn = tk.Button(btn_frame, text="Start Conversion", command=self.start_processing, bg='#4CAF50', fg='white', font=('Arial', 10, 'bold'))
-        self.start_btn.pack(fill='x')
+        self.start_btn = ttk.Button(btn_frame, text=i18n.get('start'), command=self.start_processing, bootstyle="success")
+        self.start_btn.pack(fill='x', ipady=5)
         
         # Progress
-        progress_frame = tk.Frame(self)
+        progress_frame = ttk.Frame(self)
         progress_frame.pack(fill='x', **padding)
-        self.status_label = tk.Label(progress_frame, text="Ready")
+        self.status_label = ttk.Label(progress_frame, text=i18n.get('ready'))
         self.status_label.pack(anchor='w')
-        self.progress_bar = ttk.Progressbar(progress_frame, orient='horizontal', mode='determinate')
-        self.progress_bar.pack(fill='x')
+        self.progress_bar = ttk.Progressbar(progress_frame, orient='horizontal', mode='determinate', bootstyle="success-striped")
+        self.progress_bar.pack(fill='x', pady=(5, 0))
         
         # Log Area
-        log_frame = tk.Frame(self)
+        log_frame = ttk.Labelframe(self, text=i18n.get('log'), padding=10)
         log_frame.pack(fill='both', expand=True, **padding)
-        tk.Label(log_frame, text="Log:").pack(anchor='w')
+        self.log_label_frame = log_frame # store reference
+
         self.log_area = scrolledtext.ScrolledText(log_frame, height=10)
         self.log_area.pack(fill='both', expand=True)
-        
+    
+    def update_texts(self):
+        self.input_label_frame.config(text=i18n.get('input_dir'))
+        self.btn_browse_input.config(text=i18n.get('browse'))
+        self.output_label_frame.config(text=i18n.get('output_dir'))
+        self.btn_browse_output.config(text=i18n.get('browse'))
+        self.lbl_hint.config(text=i18n.get('drag_drop_hint'))
+        self.start_btn.config(text=i18n.get('start'))
+        self.status_label.config(text=i18n.get('ready'))
+        self.log_label_frame.config(text=i18n.get('log'))
+
+    def on_drop(self, event):
+        files = self.tk.splitlist(event.data)
+        if files:
+            # Take the first one if it's a directory
+            path = files[0]
+            if os.path.isdir(path):
+                self.input_var.set(path)
+                if not self.output_var.get():
+                    self.output_var.set(path)
+            else:
+                # If file, maybe take parent?
+                self.input_var.set(os.path.dirname(path))
+                if not self.output_var.get():
+                    self.output_var.set(os.path.dirname(path))
+
     def select_input(self):
         path = filedialog.askdirectory()
         if path:
             self.input_var.set(path)
-            # User Requirement: Output directory defaults to input directory
             if not self.output_var.get():
                 self.output_var.set(path)
             
@@ -72,18 +120,18 @@ class ComicFolderTab(ttk.Frame):
         output_dir = self.output_var.get()
         
         if not input_dir:
-            self.log("Please select an input directory.")
+            self.log(i18n.get('select_input'))
             return
             
         if not os.path.exists(input_dir):
-            self.log(f"Error: Input directory '{input_dir}' does not exist.")
+            self.log(i18n.get('input_not_exist', input_dir))
             return
             
         # Disable buttons
         self.start_btn.config(state='disabled')
         self.progress_bar['value'] = 0
         self.log_area.delete(1.0, tk.END)
-        self.log(f"Starting conversion...\nInput: {input_dir}\nOutput: {output_dir}\n")
+        self.log(f"{i18n.get('processing')}\nInput: {input_dir}\nOutput: {output_dir}\n")
         
         # Run in thread
         threading.Thread(target=self.run_conversion, args=(input_dir, output_dir), daemon=True).start()
@@ -98,16 +146,15 @@ class ComicFolderTab(ttk.Frame):
                 progress_callback=self.update_progress,
                 log_callback=self.log
             )
-            self.log("Processing complete!")
+            self.log(i18n.get('done'))
         except Exception as e:
-            self.log(f"Error: {e}")
+            self.log(f"{i18n.get('error')}: {e}")
             import traceback
             traceback.print_exc()
         finally:
             self.after(0, lambda: self.start_btn.config(state='normal'))
 
     def update_progress(self, current, total, desc):
-        # Update GUI from thread safely
         self.after(0, lambda: self._update_progress_gui(current, total, desc))
         
     def _update_progress_gui(self, current, total, desc):
