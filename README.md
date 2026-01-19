@@ -12,17 +12,17 @@ A pure offline **Comic Management** tool · No server uploads, all operations ar
 ## ✨ Features
 
 - ⚡ **Offline & Secure**: All processing happens locally on your machine.
-- 📂 **Folder to Format**: Batch convert folders containing images into `CBZ`, `PDF`, `EPUB`, `ZIP`, or `7Z`.
-- 📚 **Ebook Converter**: Convert eBook formats (`.epub`, `.mobi`, `.cbz`, etc.) into `CBZ`, `PDF`, `EPUB`, `ZIP`, or `7Z`.
-- 📤 **Extract to Folder**: Extract images from various archives (`.cbz`, `.epub`, `.pdf`, etc.) into folders.
-- 🧭 **Smart Sorting**: Images are sorted naturally (1, 2, 10...) for correct reading order.
-- 🖥️ **Modern GUI**: Bilingual (English/Chinese) interface with Drag & Drop support.
+- 📂 **Folder to Format**: Batch convert folders containing images into **CBZ, PDF, EPUB, ZIP, or 7Z**. Perfect for organizing loose image collections.
+- � **Format Converter**: Convert between various comic/ebook formats (e.g., **EPUB to CBZ**, **MOBI to PDF**). Supports converting `.epub`, `.mobi`, `.cbz`, `.zip`, `.rar`, `.pdf` to any target format.
+- 📤 **Extract Images**: Quickly extract all images from any comic archive (`.cbz`, `.epub`, `.pdf`, etc.) into a folder.
+- 🧭 **Smart Sorting**: Images are sorted naturally (1, 2, 10...) ensuring correct reading order.
+- 🖥️ **Modern GUI**: Bilingual (English/Chinese) interface with full **Drag & Drop** support.
 
 ---
 
 ## 🖼️ Interface Preview
 
-<img src="https://github.com/candy-blue/comic-utils/blob/main/image/image1.png" width="45%" alt="Interface 1" /> <img src="https://github.com/candy-blue/comic-utils/blob/main/image/image2.png" width="45%" alt="Interface 2" />
+<img src="https://github.com/candy-blue/comic-utils/tree/main/image/image1.png" width="45%" alt="Interface 1" /> <img src="https://github.com/candy-blue/comic-utils/tree/main/image/image2.png" width="45%" alt="Interface 2" />
 
 ---
 
