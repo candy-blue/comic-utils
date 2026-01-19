@@ -54,23 +54,6 @@ A pure offline **Comic Management** tool · No server uploads, all operations ar
 
 ---
 
-## 🔗 Related Links
-
-🪶 My Blog: `https://blog.fsyl001.sbs`  
-🐉 Other Projects: `https://fsyl001.sbs`
-
----
-
-## 📜 License
-
-This project is licensed under **CC BY-NC 4.0**.
-
-⚠️ **Commercial use is strictly prohibited.**
-Attribution required: **FSYL001 / 风神翼龙 / FSYLの小破站**
-
----
-
 ## 💬 Note
 
-> 🐉 Just for fun & learning purposes 😎
-> If you find it useful, give it a Star so I don't lose it later! 😂
+> Because the downloaded comic formats are inconsistent, I created a tool to handle them uniformly.
