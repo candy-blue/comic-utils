@@ -3,7 +3,8 @@ import os
 import threading
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, 
-    QLineEdit, QPushButton, QCheckBox, QProgressBar, QTextEdit, QFileDialog, QGridLayout
+    QLineEdit, QPushButton, QCheckBox, QProgressBar, QTextEdit, QFileDialog, QGridLayout,
+    QRadioButton, QButtonGroup
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
 
@@ -71,20 +72,20 @@ class ComicFolderTab(QWidget):
         fmt_layout = QGridLayout()
         self.fmt_group.setLayout(fmt_layout)
         
-        self.formats = ["cbz", "pdf", "epub", "mobi", "zip", "rar", "7z"]
-        self.format_checks = {}
+        self.formats = ["cbz", "zip", "pdf", "epub", "7z"]
+        self.fmt_btn_group = QButtonGroup(self)
         
         for i, fmt in enumerate(self.formats):
-            chk = QCheckBox(fmt.upper())
+            btn = QRadioButton(fmt.upper())
             if fmt == "cbz":
-                chk.setChecked(True)
-            self.format_checks[fmt] = chk
-            fmt_layout.addWidget(chk, i // 4, i % 4)
-            
+                btn.setChecked(True)
+            self.fmt_btn_group.addButton(btn)
+            fmt_layout.addWidget(btn, i // 4, i % 4)
+        
         self.layout.addWidget(self.fmt_group)
         
         # Recursive / Process Archives option
-        self.chk_process_archives = QCheckBox("Recursive / Process Archives (Also convert .zip/.rar...)")
+        self.chk_process_archives = QCheckBox(i18n.get('chk_recursive'))
         self.layout.addWidget(self.chk_process_archives)
         
         # Drag Drop Hint
@@ -125,6 +126,7 @@ class ComicFolderTab(QWidget):
         self.btn_browse_output.setText(i18n.get('browse'))
         self.fmt_group.setTitle(i18n.get('format_label'))
         self.lbl_hint.setText(i18n.get('drag_drop_hint'))
+        self.chk_process_archives.setText(i18n.get('chk_recursive'))
         self.start_btn.setText(i18n.get('start'))
         self.log_group.setTitle(i18n.get('log'))
         
@@ -166,7 +168,12 @@ class ComicFolderTab(QWidget):
         input_dir = self.entry_input.text()
         output_dir = self.entry_output.text()
         
-        selected_formats = [fmt for fmt in self.formats if self.format_checks[fmt].isChecked()]
+        selected_btn = self.fmt_btn_group.checkedButton()
+        if selected_btn:
+            selected_formats = [selected_btn.text().lower()]
+        else:
+            selected_formats = []
+            
         process_archives = self.chk_process_archives.isChecked()
         
         if not input_dir:

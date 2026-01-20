@@ -5,11 +5,27 @@
 
 ## ✨ Features
 
-- 📂 **Folder to Format**: Batch convert folders containing images into **CBZ, PDF, EPUB, ZIP, or 7Z**. Perfect for organizing loose image collections.
-- � **Format Converter**: Convert between various comic/ebook formats (e.g., **EPUB to CBZ**, **MOBI to PDF**). Supports converting `.epub`, `.mobi`, `.cbz`, `.zip`, `.rar`, `.pdf` to any target format.
-- 📤 **Extract Images**: Quickly extract all images from any comic archive (`.cbz`, `.epub`, `.pdf`, etc.) into a folder.
-- 🧭 **Smart Sorting**: Images are sorted naturally (1, 2, 10...) ensuring correct reading order.
-- 🖥️ **Modern GUI**: Bilingual (English/Chinese) interface with full **Drag & Drop** support.
+*   � **文件夹打包与转换 (Folder to Archive)** 
+    支持将包含图片的文件夹或混合文件直接封装为指定格式。 
+    *   **输入支持**：图片文件夹，或包含 `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi` 的目录。 
+    *   **输出格式**：`.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`。 
+
+*   🔄 **格式互转 (Format Conversion)** 
+    实现主流漫画/电子书格式之间的无损或有损互转。 
+    *   **支持互转**：将 `.rar`, `.mobi` 及其他常见格式统一转换为 `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`。 
+
+*   � **资源提取 (Extract to Folder)** 
+    一键将压缩包或电子书还原为图片文件夹。 
+    *   **支持解压**：`.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi` 中的图片数据。 
+
+
+## **Supported Formats (支持格式一览)** 
+
+| 功能 (Function) | 输入支持 (Input) | 输出支持 (Output) | 
+| :--- | :--- | :--- | 
+| **文件夹打包** (Folder Pack) | Folder(Images) | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
+| **格式转换** (Converter) | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
+| **提取图片** (Extract) | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | Folder (Images) |
 
 ---
 
@@ -53,4 +69,4 @@
 
 ### About RAR and MOBI Support
 - **RAR**: Writing `.rar` files is **not supported** in "Folder to Format" or "Format Converter" because it requires proprietary external tools (WinRAR). However, **reading/extracting** RAR files is supported.
-- **MOBI**: Creating `.mobi` files is **disabled** because generating valid MOBI files requires complex proprietary libraries (like kindlegen). Previous experimental support often resulted in unreadable files. Please use **EPUB** instead, which is widely supported.
+- **MOBI**: Creating `.mobi` files is **disabled** because generating valid MOBI files requires complex proprietary libraries (like kindlegen). Previous experimental support often resulted in unreadable files. Please use **EPUB ** instead, which is widely supported.
