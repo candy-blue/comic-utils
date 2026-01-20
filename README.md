@@ -5,27 +5,27 @@
 
 ## ✨ Features
 
-*   � **文件夹打包与转换 (Folder to Archive)** 
-    支持将包含图片的文件夹或混合文件直接封装为指定格式。 
-    *   **输入支持**：图片文件夹，或包含 `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi` 的目录。 
-    *   **输出格式**：`.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`。 
+*   📦 **Folder to Archive** 
+    Pack image folders or mixed-content directories directly into specific formats.
+    *   **Input Support**: Image folders, or directories containing `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi`. 
+    *   **Output Support**: `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`. 
 
-*   🔄 **格式互转 (Format Conversion)** 
-    实现主流漫画/电子书格式之间的无损或有损互转。 
-    *   **支持互转**：将 `.rar`, `.mobi` 及其他常见格式统一转换为 `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`。 
+*   🔄 **Format Conversion** 
+    Convert between mainstream comic/ebook formats (lossless or lossy). 
+    *   **Conversion Support**: Unified conversion from `.rar`, `.mobi`, and other common formats to `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`. 
 
-*   � **资源提取 (Extract to Folder)** 
-    一键将压缩包或电子书还原为图片文件夹。 
-    *   **支持解压**：`.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi` 中的图片数据。 
+*   📂 **Extract to Folder** 
+    One-click extraction of archives or ebooks back to image folders. 
+    *   **Extraction Support**: Extract images from `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi`. 
 
 
-## **Supported Formats (支持格式一览)** 
+## **Supported Formats** 
 
-| 功能 (Function) | 输入支持 (Input) | 输出支持 (Output) | 
+| Function | Input Support | Output Support | 
 | :--- | :--- | :--- | 
-| **文件夹打包** (Folder Pack) | Folder(Images) | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
-| **格式转换** (Converter) | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
-| **提取图片** (Extract) | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | Folder (Images) |
+| **Folder Pack** | Folder (Images) | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
+| **Converter** | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
+| **Extract** | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | Folder (Images) |
 
 ---
 
