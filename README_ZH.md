@@ -16,7 +16,7 @@
 
 ## 🖼️ 界面预览
 
-<img src="https://github.com/candy-blue/comic-utils/blob/main/image/image1.png" width="45%" alt="Interface 1" /> <img src="https://github.com/candy-blue/comic-utils/blob/main/image/image2.png" width="45%" alt="Interface 2" />
+<img src="https://github.com/candy-blue/comic-utils/blob/main/image/image1.png" width="100%" alt="Interface 1" /> <img src="https://github.com/candy-blue/comic-utils/blob/main/image/image2.png" width="100%" alt="Interface 2" />
 
 ---
 
