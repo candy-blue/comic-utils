@@ -1,277 +1,294 @@
+
 import threading
-import tkinter as tk
-from pathlib import Path
-from tkinter import filedialog, messagebox
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
+import sys
 import os
 import subprocess
-import sys
+from pathlib import Path
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, 
+    QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView,
+    QComboBox, QProgressBar, QFileDialog, QMessageBox, QAbstractItemView
+)
+from PyQt6.QtCore import Qt, pyqtSignal, QObject
+
 from src.modules.ebook_to_cbz.converter import ConvertError, convert_ebook
 from src.core.i18n import i18n
-from tkinterdnd2 import DND_FILES
 
-class EbookTab(ttk.Frame):
-  def __init__(self, parent):
-    super().__init__(parent)
+class EbookWorker(QObject):
+    progress_update = pyqtSignal(int, int, int, int) # done, total, ok, fail
+    item_status = pyqtSignal(int, str) # row_idx, status
+    finished = pyqtSignal()
     
-    self.output_dir = tk.StringVar(value=str(Path.cwd()))
-    self.format_var = tk.StringVar(value="cbz")
-    self.status = tk.StringVar(value=i18n.get('ready'))
-    self.is_working = False
-    self._job_total = 0
-    self._job_done = 0
+    def __init__(self, items, out_dir, fmt):
+        super().__init__()
+        self.items = items
+        self.out_dir = out_dir
+        self.fmt = fmt
+        self.running = True
 
-    self.columnconfigure(0, weight=1)
-    self.rowconfigure(1, weight=1)
+    def run(self):
+        ok_count = 0
+        fail_count = 0
+        total = len(self.items)
+        
+        for idx, (path_str, _) in enumerate(self.items):
+            if not self.running:
+                break
+                
+            self.item_status.emit(idx, i18n.get('status_converting'))
+            
+            p = Path(path_str)
+            try:
+                convert_ebook(p, self.out_dir, self.fmt)
+                self.item_status.emit(idx, i18n.get('status_success'))
+                ok_count += 1
+            except Exception as e:
+                print(f"Error converting {p}: {e}")
+                self.item_status.emit(idx, i18n.get('status_failed'))
+                fail_count += 1
+            
+            self.progress_update.emit(idx + 1, total, ok_count, fail_count)
+            
+        self.finished.emit()
 
-    self._build_ui()
-    
-    # Bind i18n
-    i18n.add_listener(self.update_texts)
-    self.update_texts()
+class EbookTab(QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        self.output_dir = str(Path.cwd())
+        self.is_working = False
+        self._job_total = 0
+        
+        # Enable DnD
+        self.setAcceptDrops(True)
+        
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        
+        self.create_widgets()
+        
+        # Bind i18n
+        i18n.add_listener(self.update_texts)
+        self.update_texts()
 
-    # DnD
-    self.drop_target_register(DND_FILES)
-    self.dnd_bind('<<Drop>>', self.on_drop)
+    def create_widgets(self):
+        # Top Bar
+        self.top_group = QGroupBox(i18n.get('output_dir'))
+        top_layout = QHBoxLayout()
+        self.top_group.setLayout(top_layout)
+        
+        self.entry_output = QLineEdit(self.output_dir)
+        self.btn_select = QPushButton(i18n.get('browse'))
+        self.btn_select.clicked.connect(self.choose_output)
+        
+        self.btn_open = QPushButton(i18n.get('open_output'))
+        self.btn_open.clicked.connect(self.open_output_dir)
+        
+        top_layout.addWidget(self.entry_output)
+        top_layout.addWidget(self.btn_select)
+        top_layout.addWidget(self.btn_open)
+        
+        self.layout.addWidget(self.top_group)
+        
+        # Middle Area (Table + Buttons)
+        mid_layout = QHBoxLayout()
+        
+        # Table
+        self.table = QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels([i18n.get('file_col'), i18n.get('type_col'), i18n.get('status_col')])
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        mid_layout.addWidget(self.table)
+        
+        # Right Buttons
+        right_layout = QVBoxLayout()
+        
+        self.btn_add = QPushButton(i18n.get('add_files'))
+        self.btn_add.clicked.connect(self.add_files)
+        right_layout.addWidget(self.btn_add)
+        
+        self.btn_remove = QPushButton(i18n.get('remove_selected'))
+        self.btn_remove.clicked.connect(self.remove_selected)
+        right_layout.addWidget(self.btn_remove)
+        
+        self.btn_clear = QPushButton(i18n.get('clear_list'))
+        self.btn_clear.clicked.connect(self.clear_list)
+        right_layout.addWidget(self.btn_clear)
+        
+        right_layout.addSpacing(20)
+        
+        # Format
+        self.lbl_format = QLabel(i18n.get('format_label'))
+        right_layout.addWidget(self.lbl_format)
+        
+        self.combo_format = QComboBox()
+        self.combo_format.addItems(["cbz", "pdf", "epub", "mobi", "zip", "rar", "7z"])
+        right_layout.addWidget(self.combo_format)
+        
+        right_layout.addSpacing(20)
+        
+        self.lbl_hint = QLabel(i18n.get('drag_drop_hint'))
+        self.lbl_hint.setWordWrap(True)
+        self.lbl_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_hint.setStyleSheet("color: #666; font-style: italic;")
+        right_layout.addWidget(self.lbl_hint)
+        
+        self.btn_start = QPushButton(i18n.get('start'))
+        self.btn_start.clicked.connect(self.start_convert)
+        self.btn_start.setMinimumHeight(40)
+        # Style logic handled in MainWindow
+        right_layout.addWidget(self.btn_start)
+        
+        right_layout.addStretch()
+        
+        mid_layout.addLayout(right_layout)
+        self.layout.addLayout(mid_layout)
+        
+        # Bottom Progress
+        self.progress = QProgressBar()
+        self.layout.addWidget(self.progress)
+        
+        self.status_label = QLabel(i18n.get('ready'))
+        self.layout.addWidget(self.status_label)
 
-  def _build_ui(self):
-    # Top Bar
-    top = ttk.Labelframe(self, text=i18n.get('output_dir'), padding=10)
-    top.grid(row=0, column=0, sticky="ew", padx=10, pady=5)
-    self.top_frame = top # store reference
-    top.columnconfigure(1, weight=1)
+    def update_texts(self):
+        self.top_group.setTitle(i18n.get('output_dir'))
+        self.btn_select.setText(i18n.get('browse'))
+        self.btn_open.setText(i18n.get('open_output'))
+        
+        self.table.setHorizontalHeaderLabels([i18n.get('file_col'), i18n.get('type_col'), i18n.get('status_col')])
+        
+        self.btn_add.setText(i18n.get('add_files'))
+        self.btn_remove.setText(i18n.get('remove_selected'))
+        self.btn_clear.setText(i18n.get('clear_list'))
+        self.lbl_format.setText(i18n.get('format_label'))
+        self.lbl_hint.setText(i18n.get('drag_drop_hint'))
+        self.btn_start.setText(i18n.get('start'))
+        
+        if not self.is_working:
+            self.status_label.setText(i18n.get('ready'))
 
-    self.entry_output = ttk.Entry(top, textvariable=self.output_dir)
-    self.entry_output.grid(row=0, column=1, sticky="ew", padx=(0, 5))
-    
-    self.btn_select = ttk.Button(top, text=i18n.get('browse'), command=self.choose_output, bootstyle="secondary")
-    self.btn_select.grid(row=0, column=2, sticky="e")
-    
-    self.btn_open = ttk.Button(top, text=i18n.get('open_output'), command=self.open_output_dir, bootstyle="info-outline")
-    self.btn_open.grid(row=0, column=3, sticky="e", padx=(5, 0))
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
 
-    # Middle Area
-    mid = ttk.Frame(self, padding=(10, 0, 10, 0))
-    mid.grid(row=1, column=0, sticky="nsew")
-    mid.columnconfigure(0, weight=1)
-    mid.rowconfigure(0, weight=1)
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        for url in urls:
+            path = url.toLocalFile()
+            if os.path.isfile(path):
+                self.add_file_to_list(path)
 
-    table_wrap = ttk.Frame(mid)
-    table_wrap.grid(row=0, column=0, sticky="nsew")
-    table_wrap.columnconfigure(0, weight=1)
-    table_wrap.rowconfigure(0, weight=1)
+    def add_files(self):
+        files, _ = QFileDialog.getOpenFileNames(
+            self, 
+            i18n.get('add_files'), 
+            "", 
+            "Ebooks (*.epub *.mobi *.pdf *.cbz *.cbr *.zip *.rar *.7z);;All Files (*.*)"
+        )
+        for f in files:
+            self.add_file_to_list(f)
 
-    columns = ("path", "type", "status")
-    self.tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="extended", bootstyle="primary")
-    self.tree.heading("path", text=i18n.get('file_col'))
-    self.tree.heading("type", text=i18n.get('type_col'))
-    self.tree.heading("status", text=i18n.get('status_col'))
-    self.tree.column("path", width=400, anchor="w")
-    self.tree.column("type", width=80, anchor="center")
-    self.tree.column("status", width=100, anchor="w")
-    self.tree.grid(row=0, column=0, sticky="nsew")
+    def add_file_to_list(self, path):
+        # Check duplicates
+        for row in range(self.table.rowCount()):
+            if self.table.item(row, 0).text() == path:
+                return
+                
+        row = self.table.rowCount()
+        self.table.insertRow(row)
+        
+        self.table.setItem(row, 0, QTableWidgetItem(path))
+        self.table.setItem(row, 1, QTableWidgetItem(Path(path).suffix))
+        self.table.setItem(row, 2, QTableWidgetItem(i18n.get('status_pending')))
 
-    yscroll = ttk.Scrollbar(table_wrap, orient="vertical", command=self.tree.yview)
-    self.tree.configure(yscrollcommand=yscroll.set)
-    yscroll.grid(row=0, column=1, sticky="ns")
+    def remove_selected(self):
+        rows = sorted(set(index.row() for index in self.table.selectedIndexes()), reverse=True)
+        for row in rows:
+            self.table.removeRow(row)
 
-    # Right Buttons
-    right = ttk.Frame(mid, padding=(10, 0, 0, 0))
-    right.grid(row=0, column=1, sticky="ns")
+    def clear_list(self):
+        self.table.setRowCount(0)
 
-    self.btn_add = ttk.Button(right, text=i18n.get('add_files'), command=self.add_files, bootstyle="primary")
-    self.btn_add.grid(row=0, column=0, sticky="ew")
-    
-    self.btn_remove = ttk.Button(right, text=i18n.get('remove_selected'), command=self.remove_selected, bootstyle="warning")
-    self.btn_remove.grid(row=1, column=0, sticky="ew", pady=(8, 0))
-    
-    self.btn_clear = ttk.Button(right, text=i18n.get('clear_list'), command=self.clear_list, bootstyle="danger")
-    self.btn_clear.grid(row=2, column=0, sticky="ew", pady=(8, 0))
-    
-    # Format Selection
-    self.lbl_format = ttk.Label(right, text=i18n.get('format_label'))
-    self.lbl_format.grid(row=3, column=0, sticky="w", pady=(15, 0))
-    
-    formats = [
-            ("cbz", i18n.get('fmt_cbz')),
-            ("pdf", i18n.get('fmt_pdf')),
-            ("epub", i18n.get('fmt_epub')),
-            ("mobi", i18n.get('fmt_mobi')),
-            ("zip", i18n.get('fmt_zip')),
-            ("rar", i18n.get('fmt_rar')),
-            ("7z", i18n.get('fmt_7z')),
-    ]
-    self.format_combo = ttk.Combobox(right, textvariable=self.format_var, state="readonly", width=20, bootstyle="primary")
-    self.format_combo['values'] = [f[0] for f in formats]
-    self.format_combo.grid(row=4, column=0, sticky="ew", pady=(5, 0))
+    def choose_output(self):
+        path = QFileDialog.getExistingDirectory(self, i18n.get('select_output'))
+        if path:
+            self.entry_output.setText(path)
 
-    # Hint
-    self.lbl_hint = ttk.Label(right, text=i18n.get('drag_drop_hint'), wraplength=100, bootstyle="secondary", justify="center")
-    self.lbl_hint.grid(row=5, column=0, sticky="ew", pady=(20, 0))
+    def open_output_dir(self):
+        out_dir = Path(self.entry_output.text()).expanduser().resolve()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            if os.name == "nt":
+                os.startfile(str(out_dir))
+            else:
+                subprocess.run(["open" if sys.platform == "darwin" else "xdg-open", str(out_dir)], check=False)
+        except Exception:
+            QMessageBox.warning(self, i18n.get('error'), "Cannot open output directory")
 
-    self.btn_start = ttk.Button(right, text=i18n.get('start'), command=self.start_convert, bootstyle="success")
-    self.btn_start.grid(row=6, column=0, sticky="ew", pady=(20, 0))
+    def start_convert(self):
+        if self.is_working:
+            return
+            
+        count = self.table.rowCount()
+        if count == 0:
+            QMessageBox.warning(self, i18n.get('error'), i18n.get('msg_no_files'))
+            return
 
-    # Bottom Area
-    bottom = ttk.Frame(self, padding=10)
-    bottom.grid(row=2, column=0, sticky="ew")
-    bottom.columnconfigure(0, weight=1)
+        out_dir = Path(self.entry_output.text()).expanduser().resolve()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        fmt = self.combo_format.currentText()
 
-    self.progress = ttk.Progressbar(bottom, mode="determinate", bootstyle="success-striped")
-    self.progress.grid(row=0, column=0, sticky="ew")
-    ttk.Label(bottom, textvariable=self.status).grid(row=1, column=0, sticky="w", pady=(6, 0))
+        self.is_working = True
+        self.toggle_inputs(False)
+        self.progress.setMaximum(count)
+        self.progress.setValue(0)
+        
+        # Prepare items: (path, row_idx) - but actually worker just needs path and we can map by index
+        # To avoid issues if rows change (though inputs are disabled), let's just pass data
+        items = []
+        for row in range(count):
+            items.append((self.table.item(row, 0).text(), row))
+            self.table.setItem(row, 2, QTableWidgetItem(i18n.get('status_pending')))
+            
+        self.worker_thread = threading.Thread(target=self._run_worker, args=(items, out_dir, fmt))
+        self.worker_thread.daemon = True
+        self.worker_thread.start()
+        
+    def _run_worker(self, items, out_dir, fmt):
+        # We need a QObject to emit signals, but we can't create QWidgets in thread
+        # So we use the approach of creating a worker object in the main thread and moving it? 
+        # Or just use the signals defined in this class? 
+        # Actually simplest is to define a Signal carrier class or use self signals with `emit` from thread (PyQt allows emitting signals from threads)
+        
+        # Re-using the logic, but adapted for thread safety
+        worker = EbookWorker(items, out_dir, fmt)
+        worker.progress_update.connect(self._on_progress)
+        worker.item_status.connect(self._on_item_status)
+        worker.finished.connect(self._on_finished)
+        worker.run()
 
-  def update_texts(self):
-      self.top_frame.config(text=i18n.get('output_dir'))
-      self.btn_select.config(text=i18n.get('browse'))
-      self.btn_open.config(text=i18n.get('open_output'))
-      
-      self.tree.heading("path", text=i18n.get('file_col'))
-      self.tree.heading("type", text=i18n.get('type_col'))
-      self.tree.heading("status", text=i18n.get('status_col'))
-      
-      self.btn_add.config(text=i18n.get('add_files'))
-      self.btn_remove.config(text=i18n.get('remove_selected'))
-      self.btn_clear.config(text=i18n.get('clear_list'))
-      self.btn_start.config(text=i18n.get('start'))
-      self.lbl_hint.config(text=i18n.get('drag_drop_hint'))
-      self.lbl_format.config(text=i18n.get('format_label'))
-      
-      if not self.is_working and self._job_total == 0:
-          self.status.set(i18n.get('ready'))
+    def _on_progress(self, done, total, ok, fail):
+        self.progress.setValue(done)
+        self.status_label.setText(i18n.get('progress_fmt', done, total, ok, fail))
 
-  def on_drop(self, event):
-      files = self.tk.splitlist(event.data)
-      for p in files:
-          if os.path.isfile(p):
-              ext = Path(p).suffix.lower()
-              if ext in ['.epub', '.mobi', '.zip', '.cbz', '.rar', '.cbr', '.pdf']:
-                  self.add_file_to_list(p)
+    def _on_item_status(self, row, status):
+        self.table.setItem(row, 2, QTableWidgetItem(status))
+        self.table.scrollToItem(self.table.item(row, 0))
 
-  def choose_output(self):
-    path = filedialog.askdirectory()
-    if path:
-      self.output_dir.set(path)
+    def _on_finished(self):
+        self.is_working = False
+        self.toggle_inputs(True)
+        QMessageBox.information(self, i18n.get('msg_done_title'), i18n.get('done'))
 
-  def open_output_dir(self):
-    out_dir = Path(self.output_dir.get()).expanduser().resolve()
-    out_dir.mkdir(parents=True, exist_ok=True)
-    try:
-      if os.name == "nt":
-        os.startfile(str(out_dir))
-      else:
-        subprocess.run(["open" if sys.platform == "darwin" else "xdg-open", str(out_dir)], check=False)
-    except Exception:
-      messagebox.showwarning(i18n.get('error'), "Cannot open output directory")
-
-  def add_files(self):
-    paths = filedialog.askopenfilenames(filetypes=[("Archives", "*.epub *.mobi *.zip *.cbz *.rar *.cbr *.pdf *.7z *.cb7"), ("All", "*.*")])
-    for p in paths:
-      if not p: continue
-      self.add_file_to_list(p)
-      
-  def add_file_to_list(self, p):
-      if self._has_path(p):
-        return
-      ext = Path(p).suffix.lower().lstrip(".")
-      self.tree.insert("", tk.END, values=(p, ext or "-", i18n.get('status_pending')))
-
-  def remove_selected(self):
-    selected = list(self.tree.selection())
-    for item in selected:
-      self.tree.delete(item)
-
-  def clear_list(self):
-    for item in self.tree.get_children(""):
-      self.tree.delete(item)
-    self.status.set(i18n.get('ready'))
-    self.progress["value"] = 0
-    self.progress["maximum"] = 0
-
-  def start_convert(self):
-    if self.is_working:
-      return
-    items = list(self.tree.get_children(""))
-    if not items:
-      messagebox.showwarning(i18n.get('error'), i18n.get('msg_no_files'))
-      return
-
-    out_dir = Path(self.output_dir.get()).expanduser().resolve()
-    out_dir.mkdir(parents=True, exist_ok=True)
-    fmt = self.format_var.get()
-
-    self.is_working = True
-    self._set_buttons_state(disabled=True)
-    self._job_total = len(items)
-    self._job_done = 0
-    self.progress["maximum"] = self._job_total
-    self.progress["value"] = 0
-    self._set_progress(0, self._job_total, 0, 0)
-
-    t = threading.Thread(target=self._convert_worker, args=(items, out_dir, fmt), daemon=True)
-    t.start()
-
-  def _convert_worker(self, items, out_dir: Path, fmt: str):
-    ok = 0
-    fail = 0
-    last_error = ""
-    for item in items:
-      p = self.tree.item(item, "values")[0]
-      try:
-        self._set_item_status(item, i18n.get('status_converting'))
-        convert_ebook(Path(p), output_dir=out_dir, fmt=fmt)
-        ok += 1
-        self._set_item_status(item, i18n.get('status_success'))
-      except ConvertError as e:
-        fail += 1
-        last_error = str(e)
-        self._set_item_status(item, i18n.get('status_failed'))
-      except Exception as e:
-        fail += 1
-        last_error = str(e)
-        self._set_item_status(item, i18n.get('status_failed'))
-
-      self._job_done += 1
-      self._set_progress(self._job_done, self._job_total, ok, fail)
-
-    def done():
-      self.is_working = False
-      self._set_buttons_state(disabled=False)
-      if fail == 0:
-        messagebox.showinfo(i18n.get('msg_done_title'), i18n.get('msg_done_count', ok))
-      else:
-        messagebox.showwarning(i18n.get('msg_done_title'), i18n.get('msg_done_fail', ok, fail, last_error))
-
-    self.after(0, done)
-
-  def _set_status(self, text: str):
-    self.after(0, lambda: self.status.set(text))
-
-  def _set_buttons_state(self, disabled: bool):
-    state = "disabled" if disabled else "normal"
-    self.after(0, lambda: self.btn_add.configure(state=state))
-    self.after(0, lambda: self.btn_remove.configure(state=state))
-    self.after(0, lambda: self.btn_clear.configure(state=state))
-    self.after(0, lambda: self.btn_start.configure(state=state))
-
-  def _set_item_status(self, item, status: str):
-    def apply():
-      vals = list(self.tree.item(item, "values"))
-      if len(vals) >= 3:
-        vals[2] = status
-        self.tree.item(item, values=tuple(vals))
-    self.after(0, apply)
-
-  def _set_progress(self, done: int, total: int, ok: int, fail: int):
-    def apply():
-      self.progress["value"] = done
-      self.status.set(i18n.get('progress_fmt', done, total, ok, fail))
-    self.after(0, apply)
-
-  def _has_path(self, path: str) -> bool:
-    for item in self.tree.get_children(""):
-      vals = self.tree.item(item, "values")
-      if vals and vals[0] == path:
-        return True
-    return False
+    def toggle_inputs(self, enable):
+        self.btn_add.setEnabled(enable)
+        self.btn_remove.setEnabled(enable)
+        self.btn_clear.setEnabled(enable)
+        self.btn_start.setEnabled(enable)
+        self.entry_output.setEnabled(enable)
+        self.btn_select.setEnabled(enable)
+        self.combo_format.setEnabled(enable)

@@ -1,152 +1,173 @@
-import tkinter as tk
-from tkinter import filedialog, scrolledtext
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-import threading
+
 import os
+import threading
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, 
+    QLineEdit, QPushButton, QCheckBox, QProgressBar, QTextEdit, QFileDialog, QGridLayout
+)
+from PyQt6.QtCore import Qt, pyqtSignal, QObject
+
 from src.modules.comic_folder import converter
 from src.core.i18n import i18n
-from tkinterdnd2 import DND_FILES
 
-class ComicFolderTab(ttk.Frame):
-    def __init__(self, parent):
-        super().__init__(parent)
+class LogSignal(QObject):
+    log_msg = pyqtSignal(str)
+    progress_update = pyqtSignal(int, int, str)
+    finished = pyqtSignal()
+
+class ComicFolderTab(QWidget):
+    def __init__(self):
+        super().__init__()
         
-        # Variables
-        self.input_var = tk.StringVar()
-        self.output_var = tk.StringVar()
-        self.format_var = tk.StringVar(value="cbz")
+        # Enable DnD
+        self.setAcceptDrops(True)
         
-        # Layout
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        
         self.create_widgets()
         
         # Bind i18n
         i18n.add_listener(self.update_texts)
         self.update_texts()
-
-        # DnD
-        self.drop_target_register(DND_FILES)
-        self.dnd_bind('<<Drop>>', self.on_drop)
         
+        # Signals
+        self.signals = LogSignal()
+        self.signals.log_msg.connect(self._log_gui)
+        self.signals.progress_update.connect(self._update_progress_gui)
+        self.signals.finished.connect(self._on_finished)
+
     def create_widgets(self):
-        padding = {'padx': 10, 'pady': 5}
-        
         # Input Directory
-        input_frame = ttk.Labelframe(self, text=i18n.get('input_dir'), padding=10)
-        input_frame.pack(fill='x', **padding)
-        self.input_label_frame = input_frame
-
-        self.entry_input = ttk.Entry(input_frame, textvariable=self.input_var)
-        self.entry_input.pack(side='left', fill='x', expand=True, padx=(0, 5))
+        self.input_group = QGroupBox(i18n.get('input_dir'))
+        input_layout = QHBoxLayout()
+        self.input_group.setLayout(input_layout)
         
-        self.btn_browse_input = ttk.Button(input_frame, text=i18n.get('browse'), command=self.select_input, bootstyle="secondary")
-        self.btn_browse_input.pack(side='right')
+        self.entry_input = QLineEdit()
+        self.btn_browse_input = QPushButton(i18n.get('browse'))
+        self.btn_browse_input.clicked.connect(self.select_input)
+        
+        input_layout.addWidget(self.entry_input)
+        input_layout.addWidget(self.btn_browse_input)
+        
+        self.layout.addWidget(self.input_group)
         
         # Output Directory
-        output_frame = ttk.Labelframe(self, text=i18n.get('output_dir'), padding=10)
-        output_frame.pack(fill='x', **padding)
-        self.output_label_frame = output_frame
-
-        self.entry_output = ttk.Entry(output_frame, textvariable=self.output_var)
-        self.entry_output.pack(side='left', fill='x', expand=True, padx=(0, 5))
+        self.output_group = QGroupBox(i18n.get('output_dir'))
+        output_layout = QHBoxLayout()
+        self.output_group.setLayout(output_layout)
         
-        self.btn_browse_output = ttk.Button(output_frame, text=i18n.get('browse'), command=self.select_output, bootstyle="secondary")
-        self.btn_browse_output.pack(side='right')
+        self.entry_output = QLineEdit()
+        self.btn_browse_output = QPushButton(i18n.get('browse'))
+        self.btn_browse_output.clicked.connect(self.select_output)
+        
+        output_layout.addWidget(self.entry_output)
+        output_layout.addWidget(self.btn_browse_output)
+        
+        self.layout.addWidget(self.output_group)
         
         # Format Selection
-        fmt_frame = ttk.Labelframe(self, text=i18n.get('format_label'), padding=10)
-        fmt_frame.pack(fill='x', **padding)
+        self.fmt_group = QGroupBox(i18n.get('format_label'))
+        fmt_layout = QGridLayout()
+        self.fmt_group.setLayout(fmt_layout)
         
         self.formats = ["cbz", "pdf", "epub", "mobi", "zip", "rar", "7z"]
-        self.format_vars = {}
+        self.format_checks = {}
         
-        # Grid layout for checkboxes
         for i, fmt in enumerate(self.formats):
-            var = tk.BooleanVar(value=(fmt == "cbz"))
-            self.format_vars[fmt] = var
-            chk = ttk.Checkbutton(fmt_frame, text=fmt.upper(), variable=var)
-            chk.grid(row=i // 4, column=i % 4, sticky='w', padx=5, pady=2)
+            chk = QCheckBox(fmt.upper())
+            if fmt == "cbz":
+                chk.setChecked(True)
+            self.format_checks[fmt] = chk
+            fmt_layout.addWidget(chk, i // 4, i % 4)
             
+        self.layout.addWidget(self.fmt_group)
+        
         # Recursive / Process Archives option
-        self.process_archives_var = tk.BooleanVar(value=False)
-        self.chk_process_archives = ttk.Checkbutton(
-            self, 
-            text="Recursive / Process Archives (Also convert .zip/.rar...)", 
-            variable=self.process_archives_var,
-            bootstyle="info-round-toggle"
-        )
-        self.chk_process_archives.pack(anchor='w', padx=20, pady=5)
+        self.chk_process_archives = QCheckBox("Recursive / Process Archives (Also convert .zip/.rar...)")
+        self.layout.addWidget(self.chk_process_archives)
         
         # Drag Drop Hint
-        self.lbl_hint = ttk.Label(self, text=i18n.get('drag_drop_hint'), bootstyle="info", font=("Helvetica", 9, "italic"))
-        self.lbl_hint.pack(pady=5)
-
+        self.lbl_hint = QLabel(i18n.get('drag_drop_hint'))
+        self.lbl_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_hint.setStyleSheet("color: #666; font-style: italic;")
+        self.layout.addWidget(self.lbl_hint)
+        
         # Start Button
-        btn_frame = ttk.Frame(self)
-        btn_frame.pack(fill='x', **padding)
-        self.start_btn = ttk.Button(btn_frame, text=i18n.get('start'), command=self.start_processing, bootstyle="success")
-        self.start_btn.pack(fill='x', ipady=5)
+        self.start_btn = QPushButton(i18n.get('start'))
+        self.start_btn.clicked.connect(self.start_processing)
+        self.start_btn.setMinimumHeight(40)
+        self.layout.addWidget(self.start_btn)
         
         # Progress
-        progress_frame = ttk.Frame(self)
-        progress_frame.pack(fill='x', **padding)
-        self.status_label = ttk.Label(progress_frame, text=i18n.get('ready'))
-        self.status_label.pack(anchor='w')
-        self.progress_bar = ttk.Progressbar(progress_frame, orient='horizontal', mode='determinate', bootstyle="success-striped")
-        self.progress_bar.pack(fill='x', pady=(5, 0))
+        progress_layout = QVBoxLayout()
+        self.status_label = QLabel(i18n.get('ready'))
+        self.progress_bar = QProgressBar()
+        progress_layout.addWidget(self.status_label)
+        progress_layout.addWidget(self.progress_bar)
+        self.layout.addLayout(progress_layout)
         
         # Log Area
-        log_frame = ttk.Labelframe(self, text=i18n.get('log'), padding=10)
-        log_frame.pack(fill='both', expand=True, **padding)
-        self.log_label_frame = log_frame
+        self.log_group = QGroupBox(i18n.get('log'))
+        log_layout = QVBoxLayout()
+        self.log_group.setLayout(log_layout)
+        
+        self.log_area = QTextEdit()
+        self.log_area.setReadOnly(True)
+        log_layout.addWidget(self.log_area)
+        
+        self.layout.addWidget(self.log_group)
 
-        self.log_area = scrolledtext.ScrolledText(log_frame, height=10)
-        self.log_area.pack(fill='both', expand=True)
-    
     def update_texts(self):
-        self.input_label_frame.config(text=i18n.get('input_dir'))
-        self.btn_browse_input.config(text=i18n.get('browse'))
-        self.output_label_frame.config(text=i18n.get('output_dir'))
-        self.btn_browse_output.config(text=i18n.get('browse'))
-        self.lbl_hint.config(text=i18n.get('drag_drop_hint'))
-        self.start_btn.config(text=i18n.get('start'))
-        self.status_label.config(text=i18n.get('ready'))
-        self.log_label_frame.config(text=i18n.get('log'))
-        self.fmt_frame.config(text=i18n.get('format_label'))
+        self.input_group.setTitle(i18n.get('input_dir'))
+        self.btn_browse_input.setText(i18n.get('browse'))
+        self.output_group.setTitle(i18n.get('output_dir'))
+        self.btn_browse_output.setText(i18n.get('browse'))
+        self.fmt_group.setTitle(i18n.get('format_label'))
+        self.lbl_hint.setText(i18n.get('drag_drop_hint'))
+        self.start_btn.setText(i18n.get('start'))
+        self.log_group.setTitle(i18n.get('log'))
+        
+        if not self.progress_bar.value():
+            self.status_label.setText(i18n.get('ready'))
 
-    def on_drop(self, event):
-        files = self.tk.splitlist(event.data)
-        if files:
-            path = files[0]
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        if urls:
+            path = urls[0].toLocalFile()
             if os.path.isdir(path):
-                self.input_var.set(path)
-                if not self.output_var.get():
-                    # Default output to parent directory of input
-                    self.output_var.set(os.path.dirname(path))
+                self.entry_input.setText(path)
+                if not self.entry_output.text():
+                    self.entry_output.setText(os.path.dirname(path))
             else:
-                self.input_var.set(os.path.dirname(path))
-                if not self.output_var.get():
-                    self.output_var.set(os.path.dirname(os.path.dirname(path)))
+                self.entry_input.setText(os.path.dirname(path))
+                if not self.entry_output.text():
+                    self.entry_output.setText(os.path.dirname(os.path.dirname(path)))
 
     def select_input(self):
-        path = filedialog.askdirectory()
+        path = QFileDialog.getExistingDirectory(self, i18n.get('select_input'))
         if path:
-            self.input_var.set(path)
-            if not self.output_var.get():
-                # Default output to parent directory of input
-                self.output_var.set(os.path.dirname(path))
-            
+            self.entry_input.setText(path)
+            if not self.entry_output.text():
+                self.entry_output.setText(os.path.dirname(path))
+
     def select_output(self):
-        path = filedialog.askdirectory()
+        path = QFileDialog.getExistingDirectory(self, i18n.get('select_output'))
         if path:
-            self.output_var.set(path)
-            
+            self.entry_output.setText(path)
+
     def start_processing(self):
-        input_dir = self.input_var.get()
-        output_dir = self.output_var.get()
+        input_dir = self.entry_input.text()
+        output_dir = self.entry_output.text()
         
-        selected_formats = [fmt for fmt in self.formats if self.format_vars[fmt].get()]
-        process_archives = self.process_archives_var.get()
+        selected_formats = [fmt for fmt in self.formats if self.format_checks[fmt].isChecked()]
+        process_archives = self.chk_process_archives.isChecked()
         
         if not input_dir:
             self.log(i18n.get('select_input'))
@@ -161,46 +182,52 @@ class ComicFolderTab(ttk.Frame):
             return
 
         # Disable buttons
-        self.start_btn.config(state='disabled')
-        self.progress_bar['value'] = 0
-        self.log_area.delete(1.0, tk.END)
+        self.start_btn.setEnabled(False)
+        self.progress_bar.setValue(0)
+        self.log_area.clear()
         self.log(f"{i18n.get('processing')}\nInput: {input_dir}\nOutput: {output_dir}\nFormats: {', '.join(selected_formats)}\nProcess Archives: {process_archives}\n")
         
         # Run in thread
         threading.Thread(target=self.run_conversion, args=(input_dir, output_dir, selected_formats, process_archives), daemon=True).start()
-        
+
     def run_conversion(self, input_dir, output_dir, formats, process_archives):
         try:
             target_output = output_dir if output_dir.strip() else None
+            
+            # Wrapper for callbacks to emit signals
+            def progress_cb(current, total, desc):
+                self.signals.progress_update.emit(current, total, desc)
+                
+            def log_cb(msg):
+                self.signals.log_msg.emit(msg)
             
             converter.process_directory(
                 input_dir, 
                 target_output, 
                 formats=formats,
                 process_archives=process_archives,
-                progress_callback=self.update_progress,
-                log_callback=self.log
+                progress_callback=progress_cb,
+                log_callback=log_cb
             )
-            self.log(i18n.get('done'))
+            self.signals.log_msg.emit(i18n.get('done'))
         except Exception as e:
-            self.log(f"{i18n.get('error')}: {e}")
+            self.signals.log_msg.emit(f"{i18n.get('error')}: {e}")
             import traceback
             traceback.print_exc()
         finally:
-            self.after(0, lambda: self.start_btn.config(state='normal'))
+            self.signals.finished.emit()
 
-    def update_progress(self, current, total, desc):
-        self.after(0, lambda: self._update_progress_gui(current, total, desc))
-        
+    def _on_finished(self):
+        self.start_btn.setEnabled(True)
+
     def _update_progress_gui(self, current, total, desc):
         if total > 0:
-            self.progress_bar['maximum'] = total
-            self.progress_bar['value'] = current
-        self.status_label.config(text=desc)
+            self.progress_bar.setMaximum(total)
+            self.progress_bar.setValue(current)
+        self.status_label.setText(desc)
 
     def log(self, message):
-        self.after(0, lambda: self._log_gui(message))
+        self._log_gui(message)
         
     def _log_gui(self, message):
-        self.log_area.insert(tk.END, message + "\n")
-        self.log_area.see(tk.END)
+        self.log_area.append(message)

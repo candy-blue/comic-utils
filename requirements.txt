@@ -1,11 +1,10 @@
 tqdm
 mobi
 pyinstaller
-ttkbootstrap
-tkinterdnd2
 img2pdf
 py7zr
 Pillow
 rarfile
 pymupdf
 patool
+PyQt6
