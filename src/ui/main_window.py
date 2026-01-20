@@ -1,8 +1,9 @@
 
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget, QMessageBox, QMenu
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtCore import Qt
+import os
 
 from src.ui.comic_tab import ComicFolderTab
 from src.ui.ebook_tab import EbookTab
@@ -16,6 +17,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(i18n.get('app_title'))
         self.resize(900, 650)
         self.center_window()
+        
+        # Set Icon
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", "icon.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         
         # Central Widget (Tabs)
         self.tabs = QTabWidget()
@@ -81,66 +87,140 @@ class MainWindow(QMainWindow):
         QMessageBox.about(self, i18n.get('menu_about'), i18n.get('about_msg'))
 
     def apply_styles(self):
-        # A simple modern dark-ish style
+        # Enhanced modern style (Material Design inspired)
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #f0f2f5;
+                background-color: #f5f7fa;
+                font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+                font-size: 14px;
             }
+            
+            /* Tabs */
             QTabWidget::pane {
-                border: 1px solid #c0c0c0;
+                border: 1px solid #e1e4e8;
                 background: white;
-                border-radius: 4px;
+                border-radius: 8px;
+                top: -1px; 
             }
             QTabBar::tab {
-                background: #e0e0e0;
-                padding: 8px 12px;
-                margin-right: 2px;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
+                background: #e1e4e8;
+                color: #586069;
+                padding: 10px 20px;
+                margin-right: 4px;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+                font-weight: 600;
             }
             QTabBar::tab:selected {
                 background: white;
-                border-bottom: 2px solid #2196F3;
+                color: #0366d6;
+                border-bottom: 2px solid #0366d6;
             }
+            QTabBar::tab:hover:!selected {
+                background: #eaecef;
+            }
+            
+            /* Buttons */
             QPushButton {
-                background-color: #2196F3;
+                background-color: #0366d6;
                 color: white;
                 border: none;
-                padding: 6px 12px;
-                border-radius: 4px;
-                font-weight: bold;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: 600;
+                font-size: 13px;
             }
             QPushButton:hover {
-                background-color: #1976D2;
+                background-color: #0256b9;
+            }
+            QPushButton:pressed {
+                background-color: #024494;
             }
             QPushButton:disabled {
-                background-color: #BDBDBD;
+                background-color: #94d3a2; /* Light green for disabled start? Or just grey */
+                background-color: #d1d5da;
+                color: #959da5;
             }
+            
+            /* Inputs */
             QLineEdit {
-                padding: 5px;
-                border: 1px solid #ccc;
-                border-radius: 3px;
-            }
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #ccc;
+                padding: 8px;
+                border: 1px solid #d1d5da;
                 border-radius: 6px;
-                margin-top: 6px;
-                padding-top: 10px;
+                background: white;
+                selection-background-color: #0366d6;
+            }
+            QLineEdit:focus {
+                border: 1px solid #0366d6;
+                outline: none;
+            }
+            
+            /* GroupBox */
+            QGroupBox {
+                font-weight: 600;
+                border: 1px solid #e1e4e8;
+                border-radius: 8px;
+                margin-top: 12px;
+                padding-top: 24px;
+                padding-bottom: 12px;
+                padding-left: 12px;
+                padding-right: 12px;
+                background-color: #ffffff;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 3px;
+                subcontrol-position: top left;
+                left: 12px;
+                padding: 0 4px;
+                color: #24292e;
+                background-color: #ffffff; /* Match groupbox background to hide border behind text */
             }
+            
+            /* Radio & Checkbox */
+            QRadioButton {
+                spacing: 8px;
+                color: #24292e;
+            }
+            QRadioButton::indicator {
+                width: 18px;
+                height: 18px;
+            }
+            QCheckBox {
+                spacing: 8px;
+                color: #24292e;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+            }
+            
+            /* ProgressBar */
             QProgressBar {
-                border: 1px solid #bbb;
-                border-radius: 4px;
+                border: none;
+                background-color: #e1e4e8;
+                border-radius: 6px;
                 text-align: center;
+                color: #24292e;
+                font-weight: bold;
             }
             QProgressBar::chunk {
-                background-color: #4CAF50;
-                width: 10px;
+                background-color: #2ea44f;
+                border-radius: 6px;
+            }
+            
+            /* Label */
+            QLabel {
+                color: #24292e;
+            }
+            
+            /* TextEdit (Logs) */
+            QTextEdit {
+                border: 1px solid #d1d5da;
+                border-radius: 6px;
+                background-color: #f6f8fa;
+                font-family: Consolas, Monaco, monospace;
+                font-size: 12px;
+                padding: 8px;
             }
         """)
 

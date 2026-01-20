@@ -6,11 +6,27 @@
 
 ## ✨ 功能
 
-- 📂 **文件夹转格式**：将包含图片的文件夹批量转换为 **CBZ, PDF, EPUB, ZIP, 7Z**。非常适合整理散乱的图集。
-- 🔄 **格式转换**：支持各种漫画/电子书格式互转（例如 **EPUB 转 CBZ**，**MOBI 转 PDF**）。支持输入 `.epub`, `.mobi`, `.cbz`, `.zip`, `.rar`, `.pdf` 等格式。
-- 📤 **提取图片**：一键将漫画包（CBZ, EPUB, PDF 等）中的所有图片提取到单独的文件夹中。
-- 🧭 **智能排序**：文件处理遵循自然数字顺序（1, 2, 10...），避免乱序，确保阅读顺序正确。
-- 🖥️ **现代化界面**：中英双语支持，全界面支持 **拖拽操作**，简单直观。
+*   📦 **文件夹打包与转换 (Folder to Archive)** 
+    支持将包含图片的文件夹或混合文件直接封装为指定格式。 
+    *   **输入支持**：图片文件夹，或包含 `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi` 的目录。 
+    *   **输出格式**：`.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`。 
+
+*   🔄 **格式互转 (Format Conversion)** 
+    实现主流漫画/电子书格式之间的无损或有损互转。 
+    *   **支持互转**：将 `.rar`, `.mobi` 及其他常见格式统一转换为 `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`。 
+
+*   📂 **资源提取 (Extract to Folder)** 
+    一键将压缩包或电子书还原为图片文件夹。 
+    *   **支持解压**：`.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi` 中的图片数据。 
+
+
+## **Supported Formats (支持格式一览)** 
+
+| 功能 (Function) | 输入支持 (Input) | 输出支持 (Output) | 
+| :--- | :--- | :--- | 
+| **文件夹打包** (Folder Pack) | Folder(Images) | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
+| **格式转换** (Converter) | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
+| **提取图片** (Extract) | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | Folder (Images) |
 
 ---
 
