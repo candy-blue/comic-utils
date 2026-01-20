@@ -35,9 +35,20 @@ class EbookWorker(QObject):
             if not self.running:
                 break
                 
+            p = Path(path_str)
+            
+            # Check if source and target formats are the same
+            src_ext = p.suffix.lower().lstrip('.')
+            target_ext = self.fmt.lower().lstrip('.')
+            
+            if src_ext == target_ext:
+                self.item_status.emit(idx, i18n.get('status_skipped', 'Skipped'))
+                ok_count += 1 # Count as success or just ignore? User probably wants to know it's done.
+                self.progress_update.emit(idx + 1, total, ok_count, fail_count)
+                continue
+
             self.item_status.emit(idx, i18n.get('status_converting'))
             
-            p = Path(path_str)
             try:
                 convert_ebook(p, self.out_dir, self.fmt)
                 self.item_status.emit(idx, i18n.get('status_success'))
@@ -123,10 +134,10 @@ class EbookTab(QWidget):
         right_layout.addWidget(self.lbl_format)
         
         self.combo_format = QComboBox()
-        self.combo_format.addItems(["cbz", "pdf", "epub", "mobi", "zip", "rar", "7z"])
+        self.combo_format.addItems(["cbz", "zip", "pdf", "epub", "7z"])
         right_layout.addWidget(self.combo_format)
         
-        right_layout.addSpacing(20)
+        right_layout.addStretch()
         
         self.lbl_hint = QLabel(i18n.get('drag_drop_hint'))
         self.lbl_hint.setWordWrap(True)
@@ -189,21 +200,28 @@ class EbookTab(QWidget):
             "", 
             "Ebooks (*.epub *.mobi *.pdf *.cbz *.cbr *.zip *.rar *.7z);;All Files (*.*)"
         )
-        for f in files:
-            self.add_file_to_list(f)
-
+        for p in files:
+            self.add_file_to_list(p)
+            
     def add_file_to_list(self, path):
-        # Check duplicates
-        for row in range(self.table.rowCount()):
-            if self.table.item(row, 0).text() == path:
-                return
-                
+        if self._has_path(path):
+            return
+        
         row = self.table.rowCount()
         self.table.insertRow(row)
         
+        ext = Path(path).suffix.lower().lstrip(".")
+        
         self.table.setItem(row, 0, QTableWidgetItem(path))
-        self.table.setItem(row, 1, QTableWidgetItem(Path(path).suffix))
+        self.table.setItem(row, 1, QTableWidgetItem(ext or "-"))
         self.table.setItem(row, 2, QTableWidgetItem(i18n.get('status_pending')))
+
+    def _has_path(self, path):
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 0)
+            if item and item.text() == path:
+                return True
+        return False
 
     def remove_selected(self):
         rows = sorted(set(index.row() for index in self.table.selectedIndexes()), reverse=True)
@@ -212,6 +230,8 @@ class EbookTab(QWidget):
 
     def clear_list(self):
         self.table.setRowCount(0)
+        self.status_label.setText(i18n.get('ready'))
+        self.progress.setValue(0)
 
     def choose_output(self):
         path = QFileDialog.getExistingDirectory(self, i18n.get('select_output'))
@@ -237,10 +257,14 @@ class EbookTab(QWidget):
         if count == 0:
             QMessageBox.warning(self, i18n.get('error'), i18n.get('msg_no_files'))
             return
+            
+        fmt = self.combo_format.currentText()
+        if fmt.lower() in ['mobi', 'rar']:
+            QMessageBox.warning(self, i18n.get('error'), f"Output format '{fmt}' is not supported for writing.")
+            return
 
         out_dir = Path(self.entry_output.text()).expanduser().resolve()
         out_dir.mkdir(parents=True, exist_ok=True)
-        fmt = self.combo_format.currentText()
 
         self.is_working = True
         self.toggle_inputs(False)

@@ -50,3 +50,7 @@
 ## 💬 Note
 
 > Because the downloaded comic formats are inconsistent, I created a tool to handle them uniformly.
+
+### About RAR and MOBI Support
+- **RAR**: Writing `.rar` files is **not supported** in "Folder to Format" or "Format Converter" because it requires proprietary external tools (WinRAR). However, **reading/extracting** RAR files is supported.
+- **MOBI**: Creating `.mobi` files is **disabled** because generating valid MOBI files requires complex proprietary libraries (like kindlegen). Previous experimental support often resulted in unreadable files. Please use **EPUB** instead, which is widely supported.

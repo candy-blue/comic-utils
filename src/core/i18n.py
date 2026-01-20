@@ -35,6 +35,7 @@ TRANSLATIONS = {
         'status_extracting': 'Extracting',
         'status_success': 'Success',
         'status_failed': 'Failed',
+        'status_skipped': 'Skipped (Same Format)',
         
         'msg_no_files': 'Please add files first',
         'msg_done_title': 'Done',
@@ -43,6 +44,7 @@ TRANSLATIONS = {
         
         'progress_fmt': 'Progress: {}/{} (OK {}, Fail {})',
         'drag_drop_hint': 'Drag and drop files/folders here',
+        'chk_recursive': 'Recursive / Process Archives (Also convert .zip/.rar...)',
         
         'menu_language': 'Language',
         'menu_help': 'Help',
@@ -93,6 +95,7 @@ TRANSLATIONS = {
         'status_extracting': '提取中',
         'status_success': '成功',
         'status_failed': '失败',
+        'status_skipped': '已跳过 (格式相同)',
         
         'msg_no_files': '请先添加文件',
         'msg_done_title': '完成',
@@ -101,6 +104,7 @@ TRANSLATIONS = {
         
         'progress_fmt': '进度: {}/{} (成功 {}, 失败 {})',
         'drag_drop_hint': '将文件/文件夹拖拽至此',
+        'chk_recursive': '递归 / 处理压缩包 (同时转换 .zip/.rar...)',
         
         'menu_language': '语言',
         'menu_help': '帮助',
