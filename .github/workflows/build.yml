@@ -31,14 +31,19 @@ jobs:
 
     - name: Build EXE
       run: |
+        # 确保 spec 文件存在，如果不存在可以使用 pyinstaller --onefile your_script.py
         pyinstaller comic-utils.spec
-        dir dist
+        # 打印 dist 目录内容，方便调试查看生成的文件名
+        echo "Listing dist directory:"
+        ls dist
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: ComicUtils-Windows
         path: dist/*.exe
+        if-no-files-found: error  # 如果没找到 exe 文件，任务报错，防止假成功
+        retention-days: 5         # 临时工件保留5天，节省空间
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
@@ -46,5 +51,6 @@ jobs:
       with:
         files: dist/*.exe
         fail_on_unmatched_files: true
+        generate_release_notes: true # 自动根据 commit 生成 Release Note
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
