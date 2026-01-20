@@ -1,261 +1,310 @@
-import threading
-import tkinter as tk
-from pathlib import Path
-from tkinter import filedialog, messagebox
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
+import sys
 import os
+from pathlib import Path
+import subprocess
+
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar, QFileDialog,
+    QMessageBox, QAbstractItemView, QFrame
+)
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject
+from PyQt6.QtGui import QDragEnterEvent, QDropEvent
+
 from src.core.archive_manager import ArchiveManager
 from src.core.i18n import i18n
-from tkinterdnd2 import DND_FILES
 
-class ExtractTab(ttk.Frame):
-  def __init__(self, parent):
-    super().__init__(parent)
-    
-    self.output_dir = tk.StringVar(value=str(Path.cwd()))
-    self.status = tk.StringVar(value=i18n.get('ready'))
-    self.is_working = False
-    self._job_total = 0
-    self._job_done = 0
+class ExtractWorker(QObject):
+    # done, total, ok, fail
+    progress_update = pyqtSignal(int, int, int, int)
+    # row_idx, status_text
+    item_status = pyqtSignal(int, str)
+    # ok_count, fail_count, last_error
+    finished = pyqtSignal(int, int, str)
 
-    self.columnconfigure(0, weight=1)
-    self.rowconfigure(1, weight=1)
+    def __init__(self, items, out_dir):
+        super().__init__()
+        self.items = items
+        self.out_dir = Path(out_dir)
+        self.running = True
 
-    self._build_ui()
-    
-    i18n.add_listener(self.update_texts)
-    self.update_texts()
+    def run(self):
+        ok = 0
+        fail = 0
+        last_error = ""
+        total = len(self.items)
 
-    self.drop_target_register(DND_FILES)
-    self.dnd_bind('<<Drop>>', self.on_drop)
-
-  def _build_ui(self):
-    # Top Bar
-    top = ttk.Labelframe(self, text=i18n.get('output_dir'), padding=10)
-    top.grid(row=0, column=0, sticky="ew", padx=10, pady=5)
-    self.top_frame = top
-    top.columnconfigure(1, weight=1)
-
-    self.entry_output = ttk.Entry(top, textvariable=self.output_dir)
-    self.entry_output.grid(row=0, column=1, sticky="ew", padx=(0, 5))
-    
-    self.btn_select = ttk.Button(top, text=i18n.get('browse'), command=self.choose_output, bootstyle="secondary")
-    self.btn_select.grid(row=0, column=2, sticky="e")
-    
-    self.btn_open = ttk.Button(top, text=i18n.get('open_output'), command=self.open_output_dir, bootstyle="info-outline")
-    self.btn_open.grid(row=0, column=3, sticky="e", padx=(5, 0))
-
-    # Middle Area
-    mid = ttk.Frame(self, padding=(10, 0, 10, 0))
-    mid.grid(row=1, column=0, sticky="nsew")
-    mid.columnconfigure(0, weight=1)
-    mid.rowconfigure(0, weight=1)
-
-    table_wrap = ttk.Frame(mid)
-    table_wrap.grid(row=0, column=0, sticky="nsew")
-    table_wrap.columnconfigure(0, weight=1)
-    table_wrap.rowconfigure(0, weight=1)
-
-    columns = ("path", "type", "status")
-    self.tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="extended", bootstyle="primary")
-    self.tree.heading("path", text=i18n.get('file_col'))
-    self.tree.heading("type", text=i18n.get('type_col'))
-    self.tree.heading("status", text=i18n.get('status_col'))
-    self.tree.column("path", width=400, anchor="w")
-    self.tree.column("type", width=80, anchor="center")
-    self.tree.column("status", width=100, anchor="w")
-    self.tree.grid(row=0, column=0, sticky="nsew")
-
-    yscroll = ttk.Scrollbar(table_wrap, orient="vertical", command=self.tree.yview)
-    self.tree.configure(yscrollcommand=yscroll.set)
-    yscroll.grid(row=0, column=1, sticky="ns")
-
-    # Right Buttons
-    right = ttk.Frame(mid, padding=(10, 0, 0, 0))
-    right.grid(row=0, column=1, sticky="ns")
-
-    self.btn_add = ttk.Button(right, text=i18n.get('add_files'), command=self.add_files, bootstyle="primary")
-    self.btn_add.grid(row=0, column=0, sticky="ew")
-    
-    self.btn_remove = ttk.Button(right, text=i18n.get('remove_selected'), command=self.remove_selected, bootstyle="warning")
-    self.btn_remove.grid(row=1, column=0, sticky="ew", pady=(8, 0))
-    
-    self.btn_clear = ttk.Button(right, text=i18n.get('clear_list'), command=self.clear_list, bootstyle="danger")
-    self.btn_clear.grid(row=2, column=0, sticky="ew", pady=(8, 0))
-    
-    # Hint
-    self.lbl_hint = ttk.Label(right, text=i18n.get('drag_drop_hint'), wraplength=100, bootstyle="secondary", justify="center")
-    self.lbl_hint.grid(row=3, column=0, sticky="ew", pady=(20, 0))
-
-    self.btn_start = ttk.Button(right, text=i18n.get('start'), command=self.start_extract, bootstyle="success")
-    self.btn_start.grid(row=4, column=0, sticky="ew", pady=(20, 0))
-
-    # Bottom Area
-    bottom = ttk.Frame(self, padding=10)
-    bottom.grid(row=2, column=0, sticky="ew")
-    bottom.columnconfigure(0, weight=1)
-
-    self.progress = ttk.Progressbar(bottom, mode="determinate", bootstyle="success-striped")
-    self.progress.grid(row=0, column=0, sticky="ew")
-    ttk.Label(bottom, textvariable=self.status).grid(row=1, column=0, sticky="w", pady=(6, 0))
-
-  def update_texts(self):
-      self.top_frame.config(text=i18n.get('output_dir'))
-      self.btn_select.config(text=i18n.get('browse'))
-      self.btn_open.config(text=i18n.get('open_output'))
-      
-      self.tree.heading("path", text=i18n.get('file_col'))
-      self.tree.heading("type", text=i18n.get('type_col'))
-      self.tree.heading("status", text=i18n.get('status_col'))
-      
-      self.btn_add.config(text=i18n.get('add_files'))
-      self.btn_remove.config(text=i18n.get('remove_selected'))
-      self.btn_clear.config(text=i18n.get('clear_list'))
-      self.btn_start.config(text=i18n.get('start'))
-      self.lbl_hint.config(text=i18n.get('drag_drop_hint'))
-      
-      if not self.is_working and self._job_total == 0:
-          self.status.set(i18n.get('ready'))
-
-  def on_drop(self, event):
-    files = self.tk.splitlist(event.data)
-    for p in files:
-      if os.path.isfile(p):
-        ext = Path(p).suffix.lower()
-        if ext in ['.epub', '.mobi', '.zip', '.cbz', '.rar', '.cbr', '.pdf', '.7z', '.cb7']:
-          self.add_file_to_list(p)
-
-  def choose_output(self):
-    path = filedialog.askdirectory()
-    if path:
-      self.output_dir.set(path)
-
-  def open_output_dir(self):
-    out_dir = Path(self.output_dir.get()).expanduser().resolve()
-    out_dir.mkdir(parents=True, exist_ok=True)
-    try:
-      if os.name == "nt":
-        os.startfile(str(out_dir))
-      else:
-        subprocess.run(["open" if sys.platform == "darwin" else "xdg-open", str(out_dir)], check=False)
-    except Exception:
-      messagebox.showwarning(i18n.get('error'), "Cannot open output directory")
-
-  def add_files(self):
-    paths = filedialog.askopenfilenames(filetypes=[("Archives", "*.epub *.mobi *.zip *.cbz *.rar *.cbr *.pdf *.7z *.cb7"), ("All", "*.*")])
-    for p in paths:
-      if not p: continue
-      self.add_file_to_list(p)
-      
-  def add_file_to_list(self, p):
-      if self._has_path(p):
-        return
-      ext = Path(p).suffix.lower().lstrip(".")
-      self.tree.insert("", tk.END, values=(p, ext or "-", i18n.get('status_pending')))
-
-  def remove_selected(self):
-    selected = list(self.tree.selection())
-    for item in selected:
-      self.tree.delete(item)
-
-  def clear_list(self):
-    for item in self.tree.get_children(""):
-      self.tree.delete(item)
-    self.status.set(i18n.get('ready'))
-    self.progress["value"] = 0
-    self.progress["maximum"] = 0
-
-  def start_extract(self):
-    if self.is_working:
-      return
-    items = list(self.tree.get_children(""))
-    if not items:
-      messagebox.showwarning(i18n.get('error'), i18n.get('msg_no_files'))
-      return
-
-    out_dir = Path(self.output_dir.get()).expanduser().resolve()
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    self.is_working = True
-    self._set_buttons_state(disabled=True)
-    self._job_total = len(items)
-    self._job_done = 0
-    self.progress["maximum"] = self._job_total
-    self.progress["value"] = 0
-    self._set_progress(0, self._job_total, 0, 0)
-
-    t = threading.Thread(target=self._extract_worker, args=(items, out_dir), daemon=True)
-    t.start()
-
-  def _extract_worker(self, items, out_dir: Path):
-    ok = 0
-    fail = 0
-    last_error = ""
-    for item in items:
-      p = self.tree.item(item, "values")[0]
-      try:
-        self._set_item_status(item, i18n.get('status_extracting'))
-        
-        # Create a subfolder for each archive
-        archive_name = Path(p).stem
-        target_dir = out_dir / archive_name
-        
-        count = ArchiveManager.extract_archive(Path(p), target_dir)
-        
-        if count > 0:
-            ok += 1
-            self._set_item_status(item, i18n.get('status_success'))
-        else:
-            fail += 1
-            last_error = "No images extracted"
-            self._set_item_status(item, i18n.get('status_failed'))
+        for idx, (path_str, _) in enumerate(self.items):
+            if not self.running:
+                break
             
-      except Exception as e:
-        fail += 1
-        last_error = str(e)
-        self._set_item_status(item, i18n.get('status_failed'))
+            p = Path(path_str)
+            self.item_status.emit(idx, i18n.get('status_extracting'))
 
-      self._job_done += 1
-      self._set_progress(self._job_done, self._job_total, ok, fail)
+            try:
+                # Create a subfolder for each archive
+                archive_name = p.stem
+                target_dir = self.out_dir / archive_name
+                
+                # Ensure ArchiveManager.extract_archive is thread-safe or doesn't touch UI
+                count = ArchiveManager.extract_archive(p, target_dir)
+                
+                if count > 0:
+                    ok += 1
+                    self.item_status.emit(idx, i18n.get('status_success'))
+                else:
+                    fail += 1
+                    last_error = "No images extracted"
+                    self.item_status.emit(idx, i18n.get('status_failed'))
+            except Exception as e:
+                fail += 1
+                last_error = str(e)
+                self.item_status.emit(idx, i18n.get('status_failed'))
+            
+            self.progress_update.emit(idx + 1, total, ok, fail)
 
-    def done():
-      self.is_working = False
-      self._set_buttons_state(disabled=False)
-      if fail == 0:
-        messagebox.showinfo(i18n.get('msg_done_title'), i18n.get('msg_done_count', ok))
-      else:
-        messagebox.showwarning(i18n.get('msg_done_title'), i18n.get('msg_done_fail', ok, fail, last_error))
+        self.finished.emit(ok, fail, last_error)
 
-    self.after(0, done)
+    def stop(self):
+        self.running = False
 
-  def _set_status(self, text: str):
-    self.after(0, lambda: self.status.set(text))
+class ExtractTab(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.output_dir = str(Path.cwd())
+        self.is_working = False
+        
+        self.init_ui()
+        
+        i18n.add_listener(self.update_texts)
+        self.update_texts()
+        
+        # Enable Drag and Drop
+        self.setAcceptDrops(True)
 
-  def _set_buttons_state(self, disabled: bool):
-    state = "disabled" if disabled else "normal"
-    self.after(0, lambda: self.btn_add.configure(state=state))
-    self.after(0, lambda: self.btn_remove.configure(state=state))
-    self.after(0, lambda: self.btn_clear.configure(state=state))
-    self.after(0, lambda: self.btn_start.configure(state=state))
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
 
-  def _set_item_status(self, item, status: str):
-    def apply():
-      vals = list(self.tree.item(item, "values"))
-      if len(vals) >= 3:
-        vals[2] = status
-        self.tree.item(item, values=tuple(vals))
-    self.after(0, apply)
+        # Top Bar: Output Directory
+        top_layout = QHBoxLayout()
+        self.lbl_output = QLabel() # text set in update_texts
+        self.entry_output = QLineEdit(self.output_dir)
+        self.entry_output.setReadOnly(True)
+        self.btn_browse = QPushButton()
+        self.btn_browse.clicked.connect(self.choose_output)
+        self.btn_open = QPushButton()
+        self.btn_open.clicked.connect(self.open_output_dir)
+        
+        top_layout.addWidget(self.lbl_output)
+        top_layout.addWidget(self.entry_output)
+        top_layout.addWidget(self.btn_browse)
+        top_layout.addWidget(self.btn_open)
+        layout.addLayout(top_layout)
 
-  def _set_progress(self, done: int, total: int, ok: int, fail: int):
-    def apply():
-      self.progress["value"] = done
-      self.status.set(i18n.get('progress_fmt', done, total, ok, fail))
-    self.after(0, apply)
+        # Middle Area: Table and Buttons
+        mid_layout = QHBoxLayout()
+        
+        # File Table
+        self.table = QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        self.table.setColumnWidth(1, 80)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        self.table.setColumnWidth(2, 120)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        mid_layout.addWidget(self.table)
 
-  def _has_path(self, path: str) -> bool:
-    for item in self.tree.get_children(""):
-      vals = self.tree.item(item, "values")
-      if vals and vals[0] == path:
-        return True
-    return False
+        # Right Buttons
+        btn_layout = QVBoxLayout()
+        self.btn_add = QPushButton()
+        self.btn_add.clicked.connect(self.add_files)
+        self.btn_remove = QPushButton()
+        self.btn_remove.clicked.connect(self.remove_selected)
+        self.btn_clear = QPushButton()
+        self.btn_clear.clicked.connect(self.clear_list)
+        
+        self.lbl_hint = QLabel()
+        self.lbl_hint.setWordWrap(True)
+        self.lbl_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_hint.setStyleSheet("color: gray;")
+        
+        self.btn_start = QPushButton()
+        self.btn_start.clicked.connect(self.start_extract)
+        self.btn_start.setStyleSheet("font-weight: bold; padding: 8px;")
+        
+        btn_layout.addWidget(self.btn_add)
+        btn_layout.addWidget(self.btn_remove)
+        btn_layout.addWidget(self.btn_clear)
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.lbl_hint)
+        btn_layout.addSpacing(20)
+        btn_layout.addWidget(self.btn_start)
+        
+        mid_layout.addLayout(btn_layout)
+        layout.addLayout(mid_layout)
+
+        # Bottom Area: Progress
+        self.progress = QProgressBar()
+        self.progress.setTextVisible(True)
+        self.progress.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_status = QLabel()
+        
+        layout.addWidget(self.progress)
+        layout.addWidget(self.lbl_status)
+
+    def update_texts(self):
+        self.lbl_output.setText(i18n.get('output_dir'))
+        self.btn_browse.setText(i18n.get('browse'))
+        self.btn_open.setText(i18n.get('open_output'))
+        
+        headers = [i18n.get('file_col'), i18n.get('type_col'), i18n.get('status_col')]
+        self.table.setHorizontalHeaderLabels(headers)
+        
+        self.btn_add.setText(i18n.get('add_files'))
+        self.btn_remove.setText(i18n.get('remove_selected'))
+        self.btn_clear.setText(i18n.get('clear_list'))
+        self.btn_start.setText(i18n.get('start'))
+        self.lbl_hint.setText(i18n.get('drag_drop_hint'))
+        
+        if not self.is_working:
+            self.lbl_status.setText(i18n.get('ready'))
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent):
+        for url in event.mimeData().urls():
+            path = url.toLocalFile()
+            if os.path.isfile(path):
+                ext = Path(path).suffix.lower()
+                if ext in ['.epub', '.mobi', '.zip', '.cbz', '.rar', '.cbr', '.pdf', '.7z', '.cb7']:
+                    self.add_file_to_list(path)
+
+    def choose_output(self):
+        path = QFileDialog.getExistingDirectory(self, i18n.get('output_dir'), self.output_dir)
+        if path:
+            self.output_dir = path
+            self.entry_output.setText(path)
+
+    def open_output_dir(self):
+        path = Path(self.output_dir).resolve()
+        path.mkdir(parents=True, exist_ok=True)
+        try:
+            if sys.platform == "win32":
+                os.startfile(str(path))
+            elif sys.platform == "darwin":
+                subprocess.run(["open", str(path)], check=False)
+            else:
+                subprocess.run(["xdg-open", str(path)], check=False)
+        except Exception as e:
+            QMessageBox.warning(self, i18n.get('error'), f"Cannot open directory: {e}")
+
+    def add_files(self):
+        files, _ = QFileDialog.getOpenFileNames(
+            self, 
+            i18n.get('add_files'), 
+            "", 
+            "Archives (*.epub *.mobi *.zip *.cbz *.rar *.cbr *.pdf *.7z *.cb7);;All Files (*.*)"
+        )
+        for p in files:
+            self.add_file_to_list(p)
+
+    def add_file_to_list(self, path):
+        if self._has_path(path):
+            return
+        
+        row = self.table.rowCount()
+        self.table.insertRow(row)
+        
+        ext = Path(path).suffix.lower().lstrip(".")
+        
+        self.table.setItem(row, 0, QTableWidgetItem(path))
+        
+        type_item = QTableWidgetItem(ext or "-")
+        type_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.table.setItem(row, 1, type_item)
+        
+        self.table.setItem(row, 2, QTableWidgetItem(i18n.get('status_pending')))
+
+    def _has_path(self, path):
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 0)
+            if item and item.text() == path:
+                return True
+        return False
+
+    def remove_selected(self):
+        rows = sorted(set(index.row() for index in self.table.selectedIndexes()), reverse=True)
+        for row in rows:
+            self.table.removeRow(row)
+
+    def clear_list(self):
+        self.table.setRowCount(0)
+        self.lbl_status.setText(i18n.get('ready'))
+        self.progress.setValue(0)
+
+    def start_extract(self):
+        if self.is_working:
+            return
+        
+        count = self.table.rowCount()
+        if count == 0:
+            QMessageBox.warning(self, i18n.get('error'), i18n.get('msg_no_files'))
+            return
+
+        items = []
+        for row in range(count):
+            path_item = self.table.item(row, 0)
+            status_item = self.table.item(row, 2)
+            if path_item:
+                items.append((path_item.text(), row))
+        
+        self.is_working = True
+        self.set_ui_state(False)
+        self.progress.setMaximum(count)
+        self.progress.setValue(0)
+        
+        self.thread = QThread()
+        self.worker = ExtractWorker(items, self.output_dir)
+        self.worker.moveToThread(self.thread)
+        
+        self.thread.started.connect(self.worker.run)
+        self.worker.item_status.connect(self.on_item_status)
+        self.worker.progress_update.connect(self.on_progress)
+        self.worker.finished.connect(self.on_finished)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+        
+        self.thread.start()
+
+    def on_item_status(self, idx, status):
+        self.table.setItem(idx, 2, QTableWidgetItem(status))
+        self.table.scrollToItem(self.table.item(idx, 0))
+
+    def on_progress(self, done, total, ok, fail):
+        self.progress.setValue(done)
+        self.lbl_status.setText(i18n.get('progress_fmt', done, total, ok, fail))
+
+    def on_finished(self, ok, fail, last_error):
+        self.is_working = False
+        self.set_ui_state(True)
+        
+        if fail == 0:
+            QMessageBox.information(self, i18n.get('msg_done_title'), i18n.get('msg_done_count', ok))
+        else:
+            QMessageBox.warning(self, i18n.get('msg_done_title'), i18n.get('msg_done_fail', ok, fail, last_error))
+
+    def set_ui_state(self, enabled):
+        self.btn_add.setEnabled(enabled)
+        self.btn_remove.setEnabled(enabled)
+        self.btn_clear.setEnabled(enabled)
+        self.btn_start.setEnabled(enabled)
+        self.btn_browse.setEnabled(enabled)
+        self.table.setEnabled(enabled)
