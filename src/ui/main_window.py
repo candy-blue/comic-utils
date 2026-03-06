@@ -1,52 +1,48 @@
-
-import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget, QMessageBox, QMenu
-from PyQt6.QtGui import QAction, QIcon
-from PyQt6.QtCore import Qt
 import os
+import sys
 
+from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QTabWidget
+
+from src.core.i18n import i18n
 from src.ui.comic_tab import ComicFolderTab
 from src.ui.ebook_tab import EbookTab
 from src.ui.extract_tab import ExtractTab
-from src.core.i18n import i18n
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        
-        self.setWindowTitle(i18n.get('app_title'))
-        self.resize(900, 650)
+
+        self.setWindowTitle(i18n.get("app_title"))
+        self.resize(980, 700)
         self.center_window()
-        
-        # Set Icon
+
         icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", "icon.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
-        
-        # Central Widget (Tabs)
+
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
-        
-        # Add Tabs
+
         self.comic_tab = ComicFolderTab()
         self.ebook_tab = EbookTab()
         self.extract_tab = ExtractTab()
-        
-        self.tabs.addTab(self.comic_tab, i18n.get('tab_folder_to_fmt'))
-        self.tabs.addTab(self.ebook_tab, i18n.get('tab_fmt_to_fmt'))
-        self.tabs.addTab(self.extract_tab, i18n.get('tab_extract'))
-        
-        # Menu
+
+        self.tabs.addTab(self.comic_tab, i18n.get("tab_folder_to_fmt"))
+        self.tabs.addTab(self.ebook_tab, i18n.get("tab_fmt_to_fmt"))
+        self.tabs.addTab(self.extract_tab, i18n.get("tab_extract"))
+
         self.create_menu()
-        
-        # Listen for language changes
+
+        self.statusBar().showMessage(i18n.get("ready"))
+        self.tabs.currentChanged.connect(self.on_tab_changed)
+
         i18n.add_listener(self.update_texts)
-        
-        # Apply some styles
+
         self.apply_styles()
 
     def center_window(self):
-        # Center logic is handled by OS usually, or:
         qr = self.frameGeometry()
         cp = self.screen().availableGeometry().center()
         qr.moveCenter(cp)
@@ -55,113 +51,127 @@ class MainWindow(QMainWindow):
     def create_menu(self):
         menu_bar = self.menuBar()
         menu_bar.clear()
-        
-        # Language Menu
-        lang_menu = menu_bar.addMenu(i18n.get('menu_language'))
-        
+
+        lang_menu = menu_bar.addMenu(i18n.get("menu_language"))
+
         action_en = QAction("English", self)
-        action_en.triggered.connect(lambda: i18n.set_lang('en'))
+        action_en.triggered.connect(lambda: i18n.set_lang("en"))
         lang_menu.addAction(action_en)
-        
+
         action_zh = QAction("中文", self)
-        action_zh.triggered.connect(lambda: i18n.set_lang('zh'))
+        action_zh.triggered.connect(lambda: i18n.set_lang("zh"))
         lang_menu.addAction(action_zh)
-        
-        # Help Menu
-        help_menu = menu_bar.addMenu(i18n.get('menu_help'))
-        
-        action_about = QAction(i18n.get('menu_about'), self)
+
+        help_menu = menu_bar.addMenu(i18n.get("menu_help"))
+
+        action_about = QAction(i18n.get("menu_about"), self)
         action_about.triggered.connect(self.show_about)
         help_menu.addAction(action_about)
 
     def update_texts(self):
-        self.setWindowTitle(i18n.get('app_title'))
-        self.tabs.setTabText(0, i18n.get('tab_folder_to_fmt'))
-        self.tabs.setTabText(1, i18n.get('tab_fmt_to_fmt'))
-        self.tabs.setTabText(2, i18n.get('tab_extract'))
-        
-        # Recreate menu to update labels
+        self.setWindowTitle(i18n.get("app_title"))
+        self.tabs.setTabText(0, i18n.get("tab_folder_to_fmt"))
+        self.tabs.setTabText(1, i18n.get("tab_fmt_to_fmt"))
+        self.tabs.setTabText(2, i18n.get("tab_extract"))
+
+        self.statusBar().showMessage(i18n.get("ready"))
         self.create_menu()
 
+    def on_tab_changed(self, _index):
+        self.statusBar().showMessage(i18n.get("ready"))
+
     def show_about(self):
-        QMessageBox.about(self, i18n.get('menu_about'), i18n.get('about_msg'))
+        QMessageBox.about(self, i18n.get("menu_about"), i18n.get("about_msg"))
 
     def apply_styles(self):
-        # Enhanced modern style (Material Design inspired)
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QMainWindow {
-                background-color: #f5f7fa;
+                background-color: #f3f5f8;
                 font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
                 font-size: 14px;
             }
-            
-            /* Tabs */
+
+            QMenuBar {
+                background: #ffffff;
+                border-bottom: 1px solid #d8dee9;
+            }
+            QMenuBar::item {
+                background: transparent;
+                padding: 6px 10px;
+            }
+            QMenuBar::item:selected {
+                background: #eaf1fb;
+                border-radius: 4px;
+            }
+
+            QStatusBar {
+                background: #ffffff;
+                border-top: 1px solid #d8dee9;
+                color: #455468;
+            }
+
             QTabWidget::pane {
-                border: 1px solid #e1e4e8;
-                background: white;
-                border-radius: 8px;
-                top: -1px; 
+                border: 1px solid #d7deea;
+                background: #ffffff;
+                border-radius: 10px;
+                top: -1px;
             }
             QTabBar::tab {
-                background: #e1e4e8;
-                color: #586069;
-                padding: 10px 20px;
-                margin-right: 4px;
-                border-top-left-radius: 6px;
-                border-top-right-radius: 6px;
+                background: #e9edf4;
+                color: #4a5b73;
+                padding: 10px 18px;
+                margin-right: 6px;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
                 font-weight: 600;
             }
             QTabBar::tab:selected {
-                background: white;
-                color: #0366d6;
-                border-bottom: 2px solid #0366d6;
+                background: #ffffff;
+                color: #0a5ec2;
+                border-bottom: 2px solid #0a5ec2;
             }
             QTabBar::tab:hover:!selected {
-                background: #eaecef;
+                background: #dde5f1;
             }
-            
-            /* Buttons */
+
             QPushButton {
-                background-color: #0366d6;
-                color: white;
+                background-color: #0a5ec2;
+                color: #ffffff;
                 border: none;
-                padding: 8px 16px;
-                border-radius: 6px;
+                padding: 8px 14px;
+                border-radius: 7px;
                 font-weight: 600;
                 font-size: 13px;
             }
             QPushButton:hover {
-                background-color: #0256b9;
+                background-color: #0853ab;
             }
             QPushButton:pressed {
-                background-color: #024494;
+                background-color: #074387;
             }
             QPushButton:disabled {
-                background-color: #94d3a2; /* Light green for disabled start? Or just grey */
-                background-color: #d1d5da;
-                color: #959da5;
+                background-color: #c7d0de;
+                color: #7a8799;
             }
-            
-            /* Inputs */
+
             QLineEdit {
                 padding: 8px;
-                border: 1px solid #d1d5da;
-                border-radius: 6px;
-                background: white;
-                selection-background-color: #0366d6;
+                border: 1px solid #cfd7e4;
+                border-radius: 7px;
+                background: #ffffff;
+                selection-background-color: #0a5ec2;
             }
             QLineEdit:focus {
-                border: 1px solid #0366d6;
-                outline: none;
+                border: 1px solid #0a5ec2;
             }
-            
-            /* GroupBox */
+
             QGroupBox {
                 font-weight: 600;
-                border: 1px solid #e1e4e8;
-                border-radius: 8px;
+                border: 1px solid #d9e0ec;
+                border-radius: 10px;
                 margin-top: 12px;
-                padding-top: 24px;
+                padding-top: 22px;
                 padding-bottom: 12px;
                 padding-left: 12px;
                 padding-right: 12px;
@@ -172,57 +182,62 @@ class MainWindow(QMainWindow):
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 4px;
-                color: #24292e;
-                background-color: #ffffff; /* Match groupbox background to hide border behind text */
+                color: #2d3a4d;
+                background-color: #ffffff;
             }
-            
-            /* Radio & Checkbox */
-            QRadioButton {
+
+            QRadioButton, QCheckBox {
                 spacing: 8px;
-                color: #24292e;
+                color: #2d3a4d;
             }
-            QRadioButton::indicator {
+            QRadioButton::indicator, QCheckBox::indicator {
                 width: 18px;
                 height: 18px;
             }
-            QCheckBox {
-                spacing: 8px;
-                color: #24292e;
-            }
-            QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
-            }
-            
-            /* ProgressBar */
+
             QProgressBar {
                 border: none;
-                background-color: #e1e4e8;
+                background-color: #e4eaf3;
                 border-radius: 6px;
                 text-align: center;
-                color: #24292e;
-                font-weight: bold;
+                color: #2d3a4d;
+                font-weight: 600;
             }
             QProgressBar::chunk {
-                background-color: #2ea44f;
+                background-color: #23a35e;
                 border-radius: 6px;
             }
-            
-            /* Label */
+
             QLabel {
-                color: #24292e;
+                color: #2d3a4d;
             }
-            
-            /* TextEdit (Logs) */
+
             QTextEdit {
-                border: 1px solid #d1d5da;
-                border-radius: 6px;
-                background-color: #f6f8fa;
+                border: 1px solid #d0d8e4;
+                border-radius: 7px;
+                background-color: #f7f9fc;
                 font-family: Consolas, Monaco, monospace;
                 font-size: 12px;
                 padding: 8px;
             }
-        """)
+
+            QTableWidget {
+                border: 1px solid #d0d8e4;
+                border-radius: 7px;
+                background-color: #ffffff;
+                gridline-color: #e8edf5;
+            }
+            QHeaderView::section {
+                background: #f2f5fb;
+                padding: 6px;
+                border: none;
+                border-bottom: 1px solid #d9e0ec;
+                color: #4a5b73;
+                font-weight: 600;
+            }
+            """
+        )
+
 
 def run_gui():
     app = QApplication(sys.argv)
