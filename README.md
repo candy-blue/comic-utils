@@ -1,96 +1,141 @@
-# 📦 Comic Utilities / 漫画工具箱
-
-A powerful tool for comic & ebook management: **Pack folders**, **Convert formats**, and **Extract images**.  
-一个强大的漫画与电子书管理工具：支持**文件夹打包**、**格式转换**以及**图片提取**。
-
----
-
-## ✨ Features / 功能特性
-
-### 🇬🇧 English
-*   📦 **Folder to Archive** 
-    Pack image folders or mixed-content directories directly into `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`.
-*   🔄 **Format Conversion** 
-    Convert between mainstream comic/ebook formats (lossless or lossy). Supports `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`.
-*   📂 **Extract to Folder** 
-    One-click extraction of images from archives or ebooks. Supports `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi`.
-
-### 🇨🇳 中文
-*   📦 **文件夹打包与转换 (Folder to Archive)** 
-    将包含图片的文件夹或混合文件直接封装为指定格式。支持 `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`。
-*   🔄 **格式互转 (Format Conversion)** 
-    实现主流漫画/电子书格式之间的无损或有损互转。支持将 `.rar`, `.mobi` 及其他常见格式统一转换为 `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`。
-*   📂 **资源提取 (Extract to Folder)** 
-    一键将压缩包或电子书还原为图片文件夹。支持解压 `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z`, `.rar`, `.mobi` 中的图片数据。
-
----
-
-## 📊 Supported Formats / 支持格式
-
-**Search Keywords**: `CBZ`, `ZIP`, `PDF`, `EPUB`, `7Z`, `RAR`, `MOBI`
-
-| Function / 功能 | Input Support / 输入支持 | Output Support / 输出支持 | 
-| :--- | :--- | :--- | 
-| **Folder Pack / 文件夹打包** | Folder (Images) | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
-| **Converter / 格式转换** | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | 
-| **Extract / 提取图片** | `.rar`, `.mobi`, `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` | Folder (Images) |
-
----
-
-## 🖼️ Interface / 界面预览
+# Comic Utils
 
 <div align="center">
-<img src="https://github.com/candy-blue/comic-utils/blob/main/image/image1.png" width="45%" alt="Interface 1" /> 
-<img src="https://github.com/candy-blue/comic-utils/blob/main/image/image2.png" width="45%" alt="Interface 2" />
+
+<img src="src/assets/icon.png" width="128" height="128" alt="Comic Utils Logo" />
+
+### Modern, High-Performance Comic & Ebook Format Converter and Archiver
+
+[![Platform](https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010-0078D4?style=flat-square&logo=windows)](https://github.com/candy-blue/comic-utils/releases)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python)](https://www.python.org/)
+[![GUI](https://img.shields.io/badge/GUI-PySide6%20Fluent%20Design-00BCF2?style=flat-square)](https://github.com/zhiyiYo/PySide6-Fluent-Widgets)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Release](https://img.shields.io/badge/Release-v1.4.0-blue?style=flat-square)](https://github.com/candy-blue/comic-utils/releases)
+
+**English** | **[简体中文](README.zh-CN.md)**
+
 </div>
 
 ---
 
-## 📝 Usage / 使用说明
+## 📖 Overview
 
-### 🇬🇧 English
-1.  **Download**: Get the latest `.exe` from the [Releases](https://github.com/candy-blue/comic-utils/releases) page.
-2.  **Run**: Double-click `ComicUtils.exe` (No installation needed).
-3.  **Select Tab**: Choose between "Folder to Format", "Format Converter", or "Extract".
-4.  **Drag & Drop**: Drag your files or folders into the window.
-5.  **Start**: Click the Start button and watch it go!
-
-> **Note**: 
-> *   **RAR**: Writing `.rar` files is **not supported** (requires proprietary WinRAR). However, **reading/extracting** RAR files is fully supported.
-> *   **MOBI**: Creating `.mobi` files is **disabled** (requires kindlegen). Previous experimental support was unstable. Please use **EPUB** instead.
-
-### 🇨🇳 中文
-1.  **下载**：在 [Releases](https://github.com/candy-blue/comic-utils/releases) 页面下载最新的 `ComicUtils.exe`。
-2.  **运行**：双击运行程序（无需安装）。
-3.  **选择功能**：在顶部标签页选择 "文件夹转格式"、"格式转换" 或 "提取到文件夹"。
-4.  **导入**：直接将文件夹或文件 **拖拽** 到窗口中。
-5.  **开始**：点击开始按钮即可！
-
-> **提示**：
-> *   **RAR**: "文件夹转格式" 和 "格式转换" 功能**不支持生成** `.rar` 文件（需 WinRAR）。但是，**读取/提取** RAR 文件是完全支持的。
-> *   **MOBI**: **已禁用**创建 `.mobi` 文件（需 kindlegen）。建议使用 **EPUB** 等格式，它具有更广泛的兼容性。
+**Comic Utils** is a modern, high-performance desktop application designed for comic book enthusiasts, digital manga collectors, and ebook readers. Built from the ground up with the **Windows 11 Fluent Design** language, it seamlessly integrates with native Windows Mica/Acrylic material and accent palettes, delivering an intuitive, responsive, and elegant workflow.
 
 ---
 
-## 🛠️ Development / 开发说明
+## ✨ Features
 
-1.  Ensure Python 3.10+ is installed.
-2.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  Run the application:
-    ```bash
-    python main.py
-    ```
-4.  Build standalone executable:
-    ```bash
-    build.bat
-    ```
+- 🎨 **Native Windows 11 Fluent Aesthetics**
+  - Inherits native Windows system accent colors and dark/light modes.
+  - Real-time seamless live theme switching (**Light / Dark / Follow System**) without restarting.
+  - Clean collapsible navigation sidebar with standardized setting cards.
+- 📦 **Smart Folder Packaging**
+  - Bundle image folders (chapters, volumes) into standard comic archives or ebooks with a single click.
+  - **Recursive Subfolder Scanning**: Automatically scans parent comic folders containing multiple chapter/volume directories and generates separate archives for each.
+  - Dual input support: **Drag-and-Drop** or **Direct Click** to open the native Windows file picker.
+- 🔄 **Batch Format Converter**
+  - Convert existing comic archives and ebooks across multiple popular formats.
+  - Multi-threaded asynchronous processing ensures fast, non-blocking batch operations.
+- 📂 **Lossless Resource Extraction**
+  - Unpack `.cbz`, `.zip`, `.epub`, `.pdf`, `.rar`, `.7z`, or `.mobi` archives back into clean image directories.
+- 📋 **Interactive Task Management Center**
+  - Visual real-time progress indicators and live statuses (`Pending`, `Processing`, `Paused`, `Completed`, `Failed`).
+  - **Category Tabs**: Instant filtering by `All Tasks`, `Folder Packaging`, `Format Converter`, or `Extract Resources`.
+  - **Granular Controls**: Individual task pause/resume and deletion, plus batch pause/resume, clear completed, and clear all.
+- 🌐 **Instant Multi-Language Switching (i18n)**
+  - Seamlessly switch between **English** and **简体中文** in real time across the entire UI.
+- 🚀 **Built-in Smart Updater**
+  - Automatic GitHub version check with rate-limit fallback.
+  - In-app one-click update downloader featuring live progress percentage, downloaded size, and cancel support.
 
 ---
 
-## 🔍 SEO & Keywords
-Comic Converter, Ebook Converter, Manga Packer, Image to PDF, Batch Converter.
-漫画转换器, 电子书格式转换, 漫画打包工具, 图片转PDF, 批量转换.
-**Supported Extensions**: `cbz`, `zip`, `pdf`, `epub`, `7z`, `rar`, `mobi`.
+## 🖼️ Screenshots
+
+<div align="center">
+
+### Home Interface (Light & Dark Theme)
+<img src="docs/images/home_light.png" width="48%" alt="Home - Light Theme" />
+<img src="docs/images/home_dark.png" width="48%" alt="Home - Dark Theme" />
+
+<br/><br/>
+
+### Folder Packaging & Recursive Scan Option
+<img src="docs/images/pack_page.png" width="80%" alt="Folder Packaging Page" />
+
+<br/><br/>
+
+### Multi-Task Processing Center
+<img src="docs/images/task_page.png" width="80%" alt="Task Center" />
+
+</div>
+
+---
+
+## 📊 Supported Formats
+
+| Feature | Supported Input | Supported Output |
+| :--- | :--- | :--- |
+| **Folder Packaging** | Image directories (`.jpg`, `.png`, `.webp`, `.gif`, `.bmp`) | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` |
+| **Format Converter** | `.cbz`, `.zip`, `.rar`, `.pdf`, `.epub`, `.mobi`, `.7z` | `.cbz`, `.zip`, `.pdf`, `.epub`, `.7z` |
+| **Extract Images** | `.cbz`, `.zip`, `.rar`, `.pdf`, `.epub`, `.mobi`, `.7z` | Folder of extracted images |
+
+> **Notes**:
+> - **RAR Format**: Extraction and conversion from RAR are supported. Creating new RAR archives is restricted by proprietary format licensing.
+> - **MOBI Format**: Deprecated format; converting `.mobi` files to modern **`.epub`** or **`.cbz`** is recommended.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Direct Download (End Users)
+1. Download the latest `ComicUtils.exe` from [GitHub Releases](https://github.com/candy-blue/comic-utils/releases).
+2. Double-click `ComicUtils.exe` to run. Portable, standalone, no installation required.
+
+### 2. Run from Source (Developers)
+Requires **Python 3.10+**:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/candy-blue/comic-utils.git
+cd comic-utils
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Launch application
+python main.py
+```
+
+### 3. Build Standalone Executable
+The repository includes an automated Windows build script `build.bat` with native Win32 PE icon resource compilation:
+
+```bash
+# Run build script
+build.bat
+```
+
+The output executable will be placed in **`dist\ComicUtils.exe`**.
+
+---
+
+## ⚙️ Pro Tips
+
+- **Batch Ingestion**: Drag multiple folders or files directly into the drop zone, or click the card to trigger the multi-select dialog.
+- **Multi-Volume Manga Packing**: Enable "Recursive Scan Subfolders" and drop the root comic folder containing subfolders like `Vol.01`, `Vol.02`, etc. The app will automatically bundle each subfolder into its own `.cbz` archive.
+- **Theme & Language**: Personalize appearance or language on the fly via the **Settings** page.
+
+---
+
+## 🤝 Contributing & Feedback
+
+Contributions, issues, and feature requests are welcome!
+- **Submit Feedback / Report Bugs**: [GitHub Issues](https://github.com/candy-blue/comic-utils/issues)
+- **Repository**: [https://github.com/candy-blue/comic-utils](https://github.com/candy-blue/comic-utils)
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

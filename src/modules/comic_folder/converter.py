@@ -2,8 +2,56 @@ import os
 import tempfile
 from pathlib import Path
 
+from src.core.i18n import i18n
 from src.core.archive_manager import ArchiveManager
-from src.core.utils import is_image_file
+from src.core.utils import delete_path, is_image_file, is_relative_to
+
+ARCHIVE_EXTENSIONS = {".zip", ".cbz", ".rar", ".cbr", ".7z", ".cb7", ".epub", ".mobi"}
+
+
+def folder_contains_images(folder_path):
+    """Return True when a directory contains image files directly inside it."""
+    target = Path(folder_path)
+    if not target.exists() or not target.is_dir():
+        return False
+
+    return any(item.is_file() and is_image_file(item.name) for item in target.iterdir())
+
+
+def suggest_output_base(root_dir):
+    """
+    Suggest the most useful folder to open/show for auto output mode.
+
+    - If the selected folder itself is an image folder, output is placed beside it.
+    - Otherwise, nested image folders create archives inside the selected root.
+    """
+    root_path = Path(root_dir).expanduser().resolve()
+    if not root_path.exists():
+        return root_path
+
+    if root_path.is_file():
+        return root_path.parent
+
+    return root_path.parent if folder_contains_images(root_path) else root_path
+
+
+def build_output_path(source_path, root_path, output_dir, fmt, is_archive):
+    """Build the destination archive path while preserving useful folder structure."""
+    source = Path(source_path).expanduser().resolve()
+    root = Path(root_path).expanduser().resolve()
+    output_name = f"{source.stem if is_archive else source.name}.{fmt}"
+
+    if output_dir:
+        output_root = Path(output_dir).expanduser().resolve()
+
+        try:
+            relative_parent = source.parent.relative_to(root)
+        except ValueError:
+            relative_parent = Path()
+
+        return output_root / relative_parent / output_name
+
+    return source.with_suffix(f".{fmt}")
 
 
 def process_directory(
@@ -11,6 +59,7 @@ def process_directory(
     output_dir=None,
     formats=None,
     process_archives=False,
+    delete_source=False,
     progress_callback=None,
     log_callback=None,
     stop_event=None,
@@ -41,16 +90,15 @@ def process_directory(
             tasks.append((Path(dirpath), False))
 
         if process_archives:
-            archive_exts = {".zip", ".cbz", ".rar", ".cbr", ".7z", ".cb7", ".epub", ".mobi"}
             for filename in filenames:
-                if Path(filename).suffix.lower() in archive_exts:
+                if Path(filename).suffix.lower() in ARCHIVE_EXTENSIONS:
                     tasks.append((Path(dirpath) / filename, True))
 
     if not tasks:
-        log_callback(f"No folders or archives found in {root_dir}")
+        log_callback(i18n.get("msg_no_items_found", root_dir))
         return summary
 
-    log_callback(f"Found {len(tasks)} items to process.")
+    log_callback(i18n.get("msg_found_tasks", len(tasks)))
 
     if output_dir:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -68,11 +116,13 @@ def process_directory(
         temp_source_dir = None
         working_source = source_path
         prep_error = None
+        created_outputs = []
+        task_success = True
 
         try:
             if is_archive:
                 temp_source_dir = tempfile.TemporaryDirectory()
-                log_callback(f"Extracting {source_path.name}...")
+                log_callback(i18n.get("msg_extracting_archive", source_path.name))
                 ArchiveManager.extract_archive(source_path, Path(temp_source_dir.name))
                 working_source = Path(temp_source_dir.name)
         except Exception as error:
@@ -84,11 +134,18 @@ def process_directory(
                     summary["cancelled"] = True
                     break
 
-                current_progress += 1
                 summary["failed"] += 1
+                task_success = False
+                log_callback(i18n.get("msg_convert_error", source_name, fmt, prep_error))
+                current_progress += 1
                 if progress_callback:
-                    progress_callback(current_progress, total, f"Processing {source_name} -> {fmt}")
-                log_callback(f"Error converting {source_name} to {fmt}: {prep_error}")
+                    progress_callback(
+                        current_progress,
+                        total,
+                        summary["success"],
+                        summary["failed"],
+                        i18n.get("msg_processing_item", source_name, fmt),
+                    )
 
             if temp_source_dir:
                 temp_source_dir.cleanup()
@@ -101,16 +158,9 @@ def process_directory(
                 summary["cancelled"] = True
                 break
 
-            current_progress += 1
-            if progress_callback:
-                progress_callback(current_progress, total, f"Processing {source_name} -> {fmt}")
-
             try:
-                archive_name = f"{source_name}.{fmt}"
-                if output_dir:
-                    output_path = Path(output_dir) / archive_name
-                else:
-                    output_path = source_path.parent / archive_name
+                output_path = build_output_path(source_path, root_path, output_dir, fmt, is_archive)
+                output_path.parent.mkdir(parents=True, exist_ok=True)
 
                 # Avoid overwriting source if source and output are identical.
                 if output_path.resolve() == source_path.resolve():
@@ -118,10 +168,35 @@ def process_directory(
 
                 ArchiveManager.create_archive(working_source, output_path, fmt)
                 summary["success"] += 1
-                log_callback(f"Success: {source_name} -> {output_path.name}")
+                created_outputs.append(output_path)
+                log_callback(i18n.get("msg_convert_success", source_name, output_path.name))
             except Exception as error:
                 summary["failed"] += 1
-                log_callback(f"Error converting {source_name} to {fmt}: {error}")
+                task_success = False
+                log_callback(i18n.get("msg_convert_error", source_name, fmt, error))
+
+            current_progress += 1
+            if progress_callback:
+                progress_callback(
+                    current_progress,
+                    total,
+                    summary["success"],
+                    summary["failed"],
+                    i18n.get("msg_processing_item", source_name, fmt),
+                )
+
+        if delete_source and not summary["cancelled"] and task_success:
+            output_inside_source = source_path.is_dir() and any(
+                is_relative_to(created_output, source_path) for created_output in created_outputs
+            )
+            if output_inside_source:
+                log_callback(i18n.get("msg_delete_source_blocked", source_path.name))
+            else:
+                try:
+                    delete_path(source_path)
+                    log_callback(i18n.get("msg_delete_source_success", source_path.name))
+                except Exception as error:
+                    log_callback(i18n.get("msg_delete_source_fail", source_path.name, error))
 
         if temp_source_dir:
             temp_source_dir.cleanup()
@@ -129,7 +204,7 @@ def process_directory(
             break
 
     if progress_callback:
-        done_msg = "Cancelled" if summary["cancelled"] else "Done"
-        progress_callback(current_progress, total, done_msg)
+        done_msg = i18n.get("cancelled") if summary["cancelled"] else i18n.get("done")
+        progress_callback(current_progress, total, summary["success"], summary["failed"], done_msg)
 
     return summary

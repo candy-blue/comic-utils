@@ -7,4 +7,5 @@ Pillow
 rarfile
 pymupdf
 patool
-PyQt6
+PySide6
+PySide6-Fluent-Widgets
