@@ -4,13 +4,13 @@
 
 <img src="src/assets/icon.png" width="128" height="128" alt="Comic Utils Logo" />
 
-### Modern, High-Performance Comic & Ebook Format Converter and Archiver
+### Modern, High-Performance Comic & Ebook Format Converter, Archiver & Extraction Tool
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010-0078D4?style=flat-square&logo=windows)](https://github.com/candy-blue/comic-utils/releases)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python)](https://www.python.org/)
 [![GUI](https://img.shields.io/badge/GUI-PySide6%20Fluent%20Design-00BCF2?style=flat-square)](https://github.com/zhiyiYo/PySide6-Fluent-Widgets)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-v1.4.0-blue?style=flat-square)](https://github.com/candy-blue/comic-utils/releases)
+[![Release](https://img.shields.io/badge/Release-v1.5.0-blue?style=flat-square)](https://github.com/candy-blue/comic-utils/releases)
 
 **English** | **[简体中文](README.zh-CN.md)**
 
@@ -30,10 +30,10 @@
   - Inherits native Windows system accent colors and dark/light modes.
   - Real-time seamless live theme switching (**Light / Dark / Follow System**) without restarting.
   - Clean collapsible navigation sidebar with standardized setting cards.
+  - **Sleek Rounded Scrollbars**: Windows 11-style ultra-thin transparent scrollbars with smooth hover expand animations.
 - 📦 **Smart Folder Packaging**
   - Bundle image folders (chapters, volumes) into standard comic archives or ebooks with a single click.
   - **Recursive Subfolder Scanning**: Automatically scans parent comic folders containing multiple chapter/volume directories and generates separate archives for each.
-  - Dual input support: **Drag-and-Drop** or **Direct Click** to open the native Windows file picker.
 - 🔄 **Batch Format Converter**
   - Convert existing comic archives and ebooks across multiple popular formats.
   - Multi-threaded asynchronous processing ensures fast, non-blocking batch operations.
@@ -117,14 +117,6 @@ build.bat
 ```
 
 The output executable will be placed in **`dist\ComicUtils.exe`**.
-
----
-
-## ⚙️ Pro Tips
-
-- **Batch Ingestion**: Drag multiple folders or files directly into the drop zone, or click the card to trigger the multi-select dialog.
-- **Multi-Volume Manga Packing**: Enable "Recursive Scan Subfolders" and drop the root comic folder containing subfolders like `Vol.01`, `Vol.02`, etc. The app will automatically bundle each subfolder into its own `.cbz` archive.
-- **Theme & Language**: Personalize appearance or language on the fly via the **Settings** page.
 
 ---
 

@@ -4,13 +4,13 @@
 
 <img src="src/assets/icon.png" width="128" height="128" alt="Comic Utils Logo" />
 
-### 现代化、高性能的漫画与电子书格式转换及归档管理工具
+### 现代化、高性能的漫画与电子书格式转换、归档与图片提取工具
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010-0078D4?style=flat-square&logo=windows)](https://github.com/candy-blue/comic-utils/releases)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python)](https://www.python.org/)
 [![GUI](https://img.shields.io/badge/GUI-PySide6%20Fluent%20Design-00BCF2?style=flat-square)](https://github.com/zhiyiYo/PySide6-Fluent-Widgets)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-v1.4.0-blue?style=flat-square)](https://github.com/candy-blue/comic-utils/releases)
+[![Release](https://img.shields.io/badge/Release-v1.5.0-blue?style=flat-square)](https://github.com/candy-blue/comic-utils/releases)
 
 **[English](README.md)** | **简体中文**
 
@@ -30,10 +30,10 @@
   - 原生继承 Windows 系统主题色与深浅色模式。
   - 支持 **浅色 / 深色 / 跟随系统** 实时无缝动态换肤，无需重启软件。
   - 沉浸式侧边导航栏与优雅的浮动设置控件。
+  - **极简圆角细滚动条**：常态 4px 悬浮透明滑块，悬停平滑加宽至 8px，自适应深浅主题。
 - 📦 **智能文件夹打包 (Folder Packaging)**
   - 支持将图片文件夹（如分卷/分话目录）一键打包为标准的漫画归档或电子书格式。
   - **递归扫描子文件夹**：自动识别多卷漫画父目录，将每个包含图片的子目录单独打包。
-  - 拖拽区域支持 **拖拽** 与 **直接点击弹出系统文件选择器** 双模式。
 - 🔄 **全能格式批量互转 (Format Converter)**
   - 支持将现有漫画归档、电子书文件批量转换为指定目标格式。
   - 采用多线程并行工作流，处理大批量图书快速稳定。
@@ -117,14 +117,6 @@ build.bat
 ```
 
 构建完成后，产物将生成在 **`dist\ComicUtils.exe`**。
-
----
-
-## ⚙️ 快捷使用技巧
-
-- **快速批量添加**：可以直接选中多个文件夹或文件，拖入卡片中；也可以直接鼠标点击卡片唤起 Windows 系统的标准选择框。
-- **多话漫画整理**：在打包整部漫画时，开启“递归扫描子文件夹”，直接拖入包含 `第01话`、`第02话`、`第03话` 的总目录，软件将全自动为你批量生成各自独立的 `.cbz` 压缩包。
-- **外观与快捷换肤**：在“设置”页中可随时切换主题风格或选择中/英文语言界面。
 
 ---
 

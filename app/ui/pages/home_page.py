@@ -9,7 +9,6 @@ class HomePage(QWidget):
         self.setObjectName("HomePage")
         self.setStyleSheet(f"#{self.objectName()} {{ background-color: transparent; }}")
         self.main_window = main_window
-        self.cards = {}
         self._setup_ui()
         i18n.add_listener(self.retranslate)
         self.retranslate()
@@ -27,7 +26,7 @@ class HomePage(QWidget):
         self.layout.addWidget(self.subtitle_label)
         self.layout.addSpacing(16)
         
-        # Feature Cards layout
+        # Row 1: Pack & Convert
         self.features_layout = QHBoxLayout()
         self.features_layout.setSpacing(16)
         
@@ -49,6 +48,7 @@ class HomePage(QWidget):
         
         self.layout.addLayout(self.features_layout)
         
+        # Row 2: Extract & Spacer
         self.features_layout2 = QHBoxLayout()
         self.features_layout2.setSpacing(16)
         
@@ -59,8 +59,8 @@ class HomePage(QWidget):
             lambda: self.main_window.switchTo(self.main_window.extract_interface)
         )
         self.features_layout2.addWidget(card3)
-        
-        # Spacer card
+
+        # Empty spacer card
         empty_card = QWidget()
         self.features_layout2.addWidget(empty_card)
         

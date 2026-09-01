@@ -9,6 +9,7 @@ from app.widgets.drop_zone import DropZoneCard
 from app.widgets.file_list import FileListWidget
 from src.core.utils import is_image_file
 from src.core.i18n import i18n
+from app.config.app_config import cfg
 
 class PackPage(QWidget):
     def __init__(self, main_window=None):
@@ -43,12 +44,11 @@ class PackPage(QWidget):
         
         # File List
         self.file_list = FileListWidget(self)
-        self.layout.addWidget(self.file_list, 1) # stretch
+        self.layout.addWidget(self.file_list, 1)
         
         # Settings Group
         self.setting_group = SettingCardGroup(i18n.get("pack_settings_group"), self)
         
-        from app.config.app_config import cfg
         self.format_card = ComboBoxSettingCard(
             cfg.packFormat,
             FluentIcon.TILES,

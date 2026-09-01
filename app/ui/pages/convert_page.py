@@ -5,6 +5,7 @@ from qfluentwidgets import (TitleLabel, BodyLabel, PrimaryPushButton,
 from app.widgets.drop_zone import DropZoneCard
 from app.widgets.file_list import FileListWidget
 from src.core.i18n import i18n
+from app.config.app_config import cfg
 
 class ConvertPage(QWidget):
     def __init__(self, main_window=None):
@@ -45,7 +46,6 @@ class ConvertPage(QWidget):
         # Settings Group
         self.setting_group = SettingCardGroup(i18n.get("convert_settings_group"), self)
         
-        from app.config.app_config import cfg
         self.format_card = ComboBoxSettingCard(
             cfg.convertFormat,
             FluentIcon.SYNC,

@@ -3,7 +3,7 @@ import re
 import urllib.request
 from PySide6.QtCore import QThread, Signal, QObject
 
-APP_VERSION = "v1.4.0"
+APP_VERSION = "v1.5.0"
 GITHUB_REPO = "candy-blue/comic-utils"
 GITHUB_URL = f"https://github.com/{GITHUB_REPO}"
 

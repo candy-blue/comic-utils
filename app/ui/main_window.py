@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from qfluentwidgets import (NavigationItemPosition, FluentWindow,
-                            SubtitleLabel, setThemeColor, Theme)
+                             SubtitleLabel, setThemeColor, Theme)
                             
 from app.ui.pages.home_page import HomePage
 from app.ui.pages.pack_page import PackPage
@@ -53,8 +53,12 @@ class MainWindow(FluentWindow):
 
     def _on_theme_changed(self, theme):
         from qfluentwidgets import setTheme
+        from app.styles.scrollbar import get_fluent_scrollbar_style
         setTheme(theme)
         self.setBackgroundColor(self._normalBackgroundColor())
+        app = QApplication.instance()
+        if app:
+            app.setStyleSheet(get_fluent_scrollbar_style(theme))
         self.update()
 
     def retranslate(self):
@@ -93,7 +97,6 @@ class MainWindow(FluentWindow):
         self.setWindowIcon(QIcon(icon_path))
 
 def run_gui():
-    # Enable high DPI scaling
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
@@ -103,14 +106,12 @@ def run_gui():
     app.setApplicationName("ComicUtils")
     
     from qfluentwidgets import qconfig, Theme, setTheme
-    # Set default theme mode to AUTO (follow Windows system theme)
+    from app.styles.scrollbar import get_fluent_scrollbar_style
     qconfig.themeMode.defaultValue = Theme.AUTO
     qconfig.load()
-    
-    # Apply theme globally to QApplication
     setTheme(qconfig.theme)
+    app.setStyleSheet(get_fluent_scrollbar_style(qconfig.theme))
     
-    # Initialize i18n
     from src.core.i18n import i18n
     i18n.set_lang(cfg.language.value)
     

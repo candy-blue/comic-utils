@@ -1,6 +1,7 @@
 from PySide6.QtCore import QObject, Signal, Slot
 import threading
 from pathlib import Path
+import os
 from src.core.archive_manager import ArchiveManager
 from src.modules.comic_folder.converter import build_output_path
 
@@ -43,8 +44,6 @@ class ConvertWorker(QObject):
         fmt = self.task.kwargs.get('fmt', 'cbz')
         out_dir = self.task.kwargs.get('out_dir')
         
-        # This is a very simplified integration. We use core ArchiveManager directly.
-        # In a real scenario we'd use the full process_directory or pass a callback.
         out_path = build_output_path(source, source, out_dir, fmt, False)
         ArchiveManager.create_archive(source, out_path, fmt)
 
