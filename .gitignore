@@ -53,4 +53,4 @@ coverage.xml
 .venv/
 .build-venv/
 .pyinstaller-build/
-config/
+/config/
